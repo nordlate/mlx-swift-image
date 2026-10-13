@@ -10,6 +10,30 @@ public enum ParityTolerance {
     public static let zeroReference = 1e-6
     /// Zero-reference fallback: absolute L2 norm and max abs difference of native vs reference, each at most this.
     public static let zeroFallbackAbsolute = 1e-6
+
+    // Slice 2 rows, also from the Stage 3 table in NATIVE_MLX_PLAN.md (merged before any native result existed).
+    // Relative L2 is the only deciding metric of these rows; max abs is reported as diagnostic.
+    /// Patch/timestep embeddings from isolated reference input.
+    public static let patchTimestepEmbeddingRelativeL2 = 1e-3
+    /// A single transformer block from isolated reference input.
+    public static let singleBlockRelativeL2 = 1e-3
+    /// Free-running latent state per scheduler step.
+    public static let schedulerLatentPerStepRelativeL2 = 5e-3
+    // Seeded noise and scheduler sigmas/timesteps are compared for bitwise equality (no tolerance), as are tensor
+    // names, dtypes, shapes and per-tensor digests of the loaded q4 weights and the quantization metadata.
+}
+
+/// The deciding limits of one comparison row. Text embeddings decide on both metrics; the slice 2 rows on relative L2 only.
+public struct ParityLimits: Sendable {
+    public let relativeL2: Double
+    public let normalizedMaxAbs: Double?
+    public static let textEmbedding = ParityLimits(
+        relativeL2: ParityTolerance.embeddingRelativeL2, normalizedMaxAbs: ParityTolerance.embeddingNormalizedMaxAbs)
+    public static let patchTimestepEmbedding = ParityLimits(
+        relativeL2: ParityTolerance.patchTimestepEmbeddingRelativeL2, normalizedMaxAbs: nil)
+    public static let singleBlock = ParityLimits(relativeL2: ParityTolerance.singleBlockRelativeL2, normalizedMaxAbs: nil)
+    public static let schedulerLatentPerStep = ParityLimits(
+        relativeL2: ParityTolerance.schedulerLatentPerStepRelativeL2, normalizedMaxAbs: nil)
 }
 
 public struct ComparisonMetrics: Codable, Equatable, Sendable {
@@ -26,7 +50,7 @@ public struct ComparisonMetrics: Codable, Equatable, Sendable {
 
 public enum ParityMetrics {
     /// Both inputs are float32 after casting; sums accumulate in Double so the metric does not add its own rounding error.
-    public static func compare(native: [Float], reference: [Float]) -> ComparisonMetrics {
+    public static func compare(native: [Float], reference: [Float], limits: ParityLimits = .textEmbedding) -> ComparisonMetrics {
         precondition(native.count == reference.count)
         var diffSq = 0.0, refSq = 0.0, maxDiff = 0.0, maxRef = 0.0
         for (n, r) in zip(native, reference) {
@@ -46,8 +70,8 @@ public enum ParityMetrics {
         } else {
             metrics.relativeL2 = absL2 / refL2
             metrics.normalizedMaxAbs = maxDiff / maxRef
-            metrics.passed = metrics.relativeL2! <= ParityTolerance.embeddingRelativeL2
-                && metrics.normalizedMaxAbs! <= ParityTolerance.embeddingNormalizedMaxAbs
+            metrics.passed = metrics.relativeL2! <= limits.relativeL2
+                && limits.normalizedMaxAbs.map { metrics.normalizedMaxAbs! <= $0 } ?? true
         }
         return metrics
     }
