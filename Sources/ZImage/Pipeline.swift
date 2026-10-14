@@ -78,7 +78,7 @@ public final class ZImageDenoiser {
     /// scheduler.step(...)`, evaluated every step. `onStep(t, latents)` sees the state after step `t` (0-based).
     public func denoise(
         request: GenerationRequest, captionFeatures: MLXArray, mode: PredictionMode = .compiled,
-        onStep: (Int, MLXArray) -> Void = { _, _ in }
+        onStep: (Int, MLXArray) throws -> Void = { _, _ in }
     ) throws -> MLXArray {
         try request.validate()
         let scheduler = LinearScheduler(steps: request.steps, width: request.width, height: request.height)
@@ -88,7 +88,7 @@ public final class ZImageDenoiser {
             let noise = predict(latents: latents, timestep: timestep, captionFeatures: captionFeatures, mode: mode)
             latents = scheduler.step(noise: noise, timestep: t, latents: latents)
             eval(latents)
-            onStep(t, latents)
+            try onStep(t, latents)
         }
         return latents
     }
@@ -118,7 +118,7 @@ public final class ZImageGenerator {
 
     /// Prompt to pixels.
     public func generate(
-        _ request: GenerationRequest, mode: PredictionMode = .compiled, onStep: (Int, MLXArray) -> Void = { _, _ in }
+        _ request: GenerationRequest, mode: PredictionMode = .compiled, onStep: (Int, MLXArray) throws -> Void = { _, _ in }
     ) throws -> GeneratedImage {
         try request.validate()
         let caption = try encodePrompt(request.prompt)

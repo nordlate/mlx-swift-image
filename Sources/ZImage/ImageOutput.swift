@@ -31,20 +31,49 @@ public enum ZImageImage {
 
     /// Encodes `[H, W, 3]` uint8 pixels as an 8-bit RGB PNG. The pixel bytes are stored as given (no colour conversion).
     public static func writePNG(pixels: MLXArray, to url: URL) throws {
+        try encodePNG(pixels: pixels).write(to: url)
+    }
+
+    /// The PNG file image `writePNG` writes, in memory (the worker publishes it atomically itself).
+    public static func encodePNG(pixels: MLXArray) throws -> Data {
+        guard let image = try cgImage(pixels: pixels) else { throw ImageError.invalid("cannot create an image from the pixels") }
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil)
+        else { throw ImageError.invalid("cannot create a PNG encoder") }
+        CGImageDestinationAddImage(destination, image, nil)
+        guard CGImageDestinationFinalize(destination) else { throw ImageError.invalid("PNG encoding failed") }
+        return data as Data
+    }
+
+    /// A small JPEG of `[H, W, 3]` uint8 pixels whose longest side is at most `maxSide` (the worker's step preview).
+    public static func previewJPEG(pixels: MLXArray, maxSide: Int) throws -> Data {
+        guard let image = try cgImage(pixels: pixels) else { throw ImageError.invalid("cannot create an image from the pixels") }
+        let scale = min(1.0, Double(maxSide) / Double(max(image.width, image.height)))
+        let (width, height) = (max(1, Int((Double(image.width) * scale).rounded())), max(1, Int((Double(image.height) * scale).rounded())))
+        guard let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
+        else { throw ImageError.invalid("cannot create a preview context") }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let data = NSMutableData()
+        guard let small = context.makeImage(), let destination = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil)
+        else { throw ImageError.invalid("cannot create a JPEG encoder") }
+        CGImageDestinationAddImage(destination, small, [kCGImageDestinationLossyCompressionQuality: 0.7] as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { throw ImageError.invalid("JPEG encoding failed") }
+        return data as Data
+    }
+
+    private static func cgImage(pixels: MLXArray) throws -> CGImage? {
         guard pixels.ndim == 3, pixels.dim(2) == 3, pixels.dtype == .uint8 else {
             throw ImageError.invalid("PNG needs [H, W, 3] uint8 pixels, got \(pixels.dtype) \(pixels.shape)")
         }
         let (height, width) = (pixels.dim(0), pixels.dim(1))
-        let bytes = pixels.asArray(UInt8.self)
-        guard let provider = CGDataProvider(data: Data(bytes) as CFData),
-              let image = CGImage(
-                  width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 24, bytesPerRow: width * 3,
-                  space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
-                  provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent),
-              let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
-        else { throw ImageError.invalid("cannot create a PNG encoder for \(url.lastPathComponent)") }
-        CGImageDestinationAddImage(destination, image, nil)
-        guard CGImageDestinationFinalize(destination) else { throw ImageError.invalid("PNG encoding failed for \(url.lastPathComponent)") }
+        guard let provider = CGDataProvider(data: Data(pixels.asArray(UInt8.self)) as CFData) else { return nil }
+        return CGImage(
+            width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 24, bytesPerRow: width * 3,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
+            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
     }
 
     /// Decodes a PNG to its stored 8-bit RGB samples (no colour management: the raw decoded bytes of the image's data provider).
@@ -55,8 +84,11 @@ public enum ZImageImage {
         else { throw ImageError.invalid("cannot decode \(url.lastPathComponent)") }
         let alpha = image.alphaInfo
         let bytesPerPixel = image.bitsPerPixel / 8
+        // The sample order below assumes R, G, B[, X]: a 32-bit pixel is only that in big-endian byte order.
+        let byteOrder = image.bitmapInfo.intersection(.byteOrderMask)
         guard image.bitsPerComponent == 8, bytesPerPixel == 3 || bytesPerPixel == 4,
-              alpha == .none || alpha == .noneSkipLast, image.colorSpace?.model == .rgb
+              alpha == .none || alpha == .noneSkipLast, image.colorSpace?.model == .rgb,
+              bytesPerPixel == 3 || byteOrder == .byteOrder32Big || byteOrder == []
         else {
             throw ImageError.invalid(
                 "\(url.lastPathComponent): expected 8-bit RGB without alpha, got \(image.bitsPerComponent)-bit, \(image.bitsPerPixel) bpp, alpha \(alpha.rawValue)")
