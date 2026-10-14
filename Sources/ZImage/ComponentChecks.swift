@@ -92,7 +92,7 @@ public enum ComponentParity {
 
     // MARK: q4 transformer weights
 
-    private struct WeightsManifest: Decodable {
+    struct WeightsManifest: Decodable {
         struct Tensor: Decodable { let dtype: String; let shape: [Int]; let sha256: String }
         struct Quantized: Decodable { let name: String; let bits: Int; let groupSize: Int; let mode: String
             enum CodingKeys: String, CodingKey { case name, bits, groupSize = "group_size", mode }
@@ -329,8 +329,10 @@ public enum ComponentParity {
     // MARK: Full transformer output
 
     /// The complete forward path (embeddings, both refiners, 30 blocks, final layer, unpatchify) from the reference's
-    /// isolated inputs (seeded latents, timestep, text embedding). The eager output decides within 2e-3; the production
-    /// compiled prediction path and the refiner/stack intermediates are diagnostics.
+    /// isolated inputs (seeded latents, timestep, text embedding). Native compiled against MFLUX's production compiled
+    /// prediction path (`ZImage._predict`) decides within 2e-3 (owner decision, slice 4, resolving the slice 3 finding that
+    /// MFLUX's own eager and compiled results differ by 2.0e-3 at 1024x1024); the eager comparisons and the refiner/stack
+    /// intermediates are diagnostics.
     public static func output(
         modelDirectory: URL, referenceDirectory: URL, casesJSON: URL, mlxSwiftRevision: String, log: (String) -> Void = { _ in }
     ) throws -> ComponentReport {
@@ -348,7 +350,7 @@ public enum ComponentParity {
             eval(output)
             let compiled = compiledForward(latents, timestep, cap)
             eval(compiled)
-            var checks = try ComponentCheck.eagerAndCompiled(
+            var checks = try ComponentCheck.compiledDecisive(
                 "transformer output", nativeEager: output, nativeCompiled: compiled, referenceEager: require(ref, "output", c.id),
                 referenceCompiled: require(ref, "output_compiled", c.id), limits: .fullTransformerOutput)
             for (name, native, key) in [

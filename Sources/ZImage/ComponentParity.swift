@@ -8,12 +8,38 @@ import MLX
 
 public struct CheckResult: Codable, Sendable {
     public var name: String
-    /// `exact` (bitwise), `relative-l2` (a predeclared limit decides) or `diagnostic` (reported, never decides).
+    /// `exact` (bitwise), `relative-l2` or `pixels` (a predeclared limit decides) or `diagnostic` (reported, never decides).
     public var kind: String
     public var decisive: Bool
     public var passed: Bool
     public var metrics: ComparisonMetrics?
+    /// Set on decoded-pixel rows (uint8 levels), which are judged by max and mean abs difference instead of relative L2.
+    public var pixels: PixelMetrics?
     public var detail: String?
+}
+
+/// Decoded-pixel comparison in uint8 levels, judged by the predeclared max abs and mean abs limits.
+public struct PixelMetrics: Codable, Equatable, Sendable {
+    public var maxAbsDiff: Int
+    public var meanAbsDiff: Double
+    public var differingValues: Int
+    public var valueCount: Int
+    public var passed: Bool
+
+    public static func compare(native: [UInt8], reference: [UInt8]) -> PixelMetrics {
+        precondition(native.count == reference.count)
+        var maxDiff = 0, differing = 0, sum = 0
+        for (n, r) in zip(native, reference) {
+            let d = abs(Int(n) - Int(r))
+            if d != 0 { differing += 1 }
+            maxDiff = max(maxDiff, d)
+            sum += d
+        }
+        let mean = native.isEmpty ? 0 : Double(sum) / Double(native.count)
+        return PixelMetrics(
+            maxAbsDiff: maxDiff, meanAbsDiff: mean, differingValues: differing, valueCount: native.count,
+            passed: Double(maxDiff) <= ParityTolerance.pixelMaxAbsLevels && mean <= ParityTolerance.pixelMeanAbsLevels)
+    }
 }
 
 public struct ComponentCaseResult: Codable, Sendable {
@@ -128,6 +154,36 @@ public enum ComponentCheck {
             tolerance("\(name): MFLUX eager vs MFLUX compiled (reference drift)", native: referenceEager, reference: referenceCompiled, limits: limits, decisive: false),
             tolerance("\(name): native compiled vs MFLUX compiled", native: nativeCompiled, reference: referenceCompiled, limits: limits, decisive: false),
         ]
+    }
+
+    /// The comparisons of the prediction under the owner's decision for slice 4: native compiled against MFLUX's production
+    /// compiled path decides (the predeclared limit); native eager vs MFLUX eager, native eager vs MFLUX compiled and MFLUX
+    /// eager vs MFLUX compiled (the reference's own drift) are recorded as diagnostics and never fail a case.
+    static func compiledDecisive(
+        _ name: String, nativeEager: MLXArray, nativeCompiled: MLXArray, referenceEager: MLXArray, referenceCompiled: MLXArray,
+        limits: ParityLimits
+    ) -> [CheckResult] {
+        [
+            tolerance("\(name): native compiled vs MFLUX compiled (production path)", native: nativeCompiled, reference: referenceCompiled, limits: limits),
+            tolerance("\(name): native eager vs MFLUX eager (retained)", native: nativeEager, reference: referenceEager, limits: limits, decisive: false),
+            tolerance("\(name): native eager vs MFLUX compiled", native: nativeEager, reference: referenceCompiled, limits: limits, decisive: false),
+            tolerance("\(name): MFLUX eager vs MFLUX compiled (reference drift)", native: referenceEager, reference: referenceCompiled, limits: limits, decisive: false),
+        ]
+    }
+
+    /// Decoded pixels `[H, W, 3]` (uint8 levels): max abs and mean abs difference against the predeclared limits.
+    static func pixels(_ name: String, native: [UInt8], reference: [UInt8], nativeShape: [Int], referenceShape: [Int], decisive: Bool = true) -> CheckResult {
+        var result = CheckResult(name: name, kind: decisive ? "pixels" : "diagnostic", decisive: decisive, passed: !decisive, metrics: nil, detail: nil)
+        guard nativeShape == referenceShape, native.count == reference.count else {
+            result.passed = false
+            result.detail = "native \(nativeShape), reference \(referenceShape)"
+            return result
+        }
+        let metrics = PixelMetrics.compare(native: native, reference: reference)
+        result.pixels = metrics
+        if decisive { result.passed = metrics.passed }
+        if metrics.differingValues == 0 { result.detail = "pixel-identical" }
+        return result
     }
 
     static func layoutProblem(native: MLXArray, reference: MLXArray) -> String? {

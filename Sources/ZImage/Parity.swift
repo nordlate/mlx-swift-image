@@ -23,6 +23,13 @@ public enum ParityTolerance {
     public static let fullTransformerOutputRelativeL2 = 2e-3
     /// Free-running latent state per scheduler step.
     public static let schedulerLatentPerStepRelativeL2 = 5e-3
+    // Slice 4 rows, from the same Stage 3 table in NATIVE_MLX_PLAN.md.
+    /// The VAE output tensor.
+    public static let vaeOutputRelativeL2 = 2e-3
+    /// Decoded pixels: max abs difference in uint8 levels.
+    public static let pixelMaxAbsLevels = 2.0
+    /// Decoded pixels: mean abs difference in uint8 levels.
+    public static let pixelMeanAbsLevels = 0.1
     // Seeded noise and scheduler sigmas/timesteps are compared for bitwise equality (no tolerance), as are tensor
     // names, dtypes, shapes and per-tensor digests of the loaded q4 weights and the quantization metadata.
 }
@@ -41,6 +48,7 @@ public struct ParityLimits: Sendable {
         relativeL2: ParityTolerance.fullTransformerOutputRelativeL2, normalizedMaxAbs: nil)
     public static let schedulerLatentPerStep = ParityLimits(
         relativeL2: ParityTolerance.schedulerLatentPerStepRelativeL2, normalizedMaxAbs: nil)
+    public static let vaeOutput = ParityLimits(relativeL2: ParityTolerance.vaeOutputRelativeL2, normalizedMaxAbs: nil)
 }
 
 public struct ComparisonMetrics: Codable, Equatable, Sendable {
