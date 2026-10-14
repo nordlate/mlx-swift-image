@@ -179,3 +179,36 @@ final class ImageOutputTests: XCTestCase {
         }
     }
 }
+
+/// Retained-memory fix (memory-investigation/): `compile` copies a still-lazy captured weight into every input signature's
+/// graph, so the compiled entry points must evaluate the weights first. The Metal-side effect (active memory flat across
+/// differently shaped jobs) is measured by zimage-retention; this checks the materialization step itself on the CPU stream.
+final class WeightMaterializationTests: XCTestCase {
+    func testMaterializeWeightsReadsLazilyLoadedTensors() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("zimage-lazy-\(UUID().uuidString).safetensors")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try save(arrays: ["w": MLXArray.zeros([2048, 2048], dtype: .float32)], url: url)  // 16 MiB
+        let tensors = try loadArrays(url: url)
+        let inspection = TransformerInspection(
+            tensorCount: 1, quantizedLinearCount: 0, shards: [:], quantizationLevel: "4", mfluxVersion: nil, bits: 4, groupSize: 64)
+        let transformer = ZImageTransformer(weights: TransformerWeights(tensors: tensors, inspection: inspection))
+        let before = Memory.activeMemory
+        Device.withDefaultDevice(.cpu) { transformer.materializeWeights() }
+        XCTAssertGreaterThanOrEqual(Memory.activeMemory - before, 15 * 1024 * 1024, "the lazy tensor was not read by materializeWeights")
+    }
+}
+
+extension WeightMaterializationTests {
+    /// Guards the fix itself: building the production compiled prediction must read the lazy weights, even if it is never called.
+    func testCompiledForwardReadsLazilyLoadedTensors() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("zimage-lazy-\(UUID().uuidString).safetensors")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try save(arrays: ["w": MLXArray.zeros([2048, 2048], dtype: .float32)], url: url)  // 16 MiB
+        let inspection = TransformerInspection(
+            tensorCount: 1, quantizedLinearCount: 0, shards: [:], quantizationLevel: "4", mfluxVersion: nil, bits: 4, groupSize: 64)
+        let transformer = ZImageTransformer(weights: TransformerWeights(tensors: try loadArrays(url: url), inspection: inspection))
+        let before = Memory.activeMemory
+        Device.withDefaultDevice(.cpu) { _ = transformer.compiledForward() }
+        XCTAssertGreaterThanOrEqual(Memory.activeMemory - before, 15 * 1024 * 1024, "compiledForward did not materialize the weights")
+    }
+}

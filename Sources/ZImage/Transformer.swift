@@ -284,9 +284,19 @@ extension ZImageTransformer {
         return -Self.unpatchify(final[0, 0 ..< imageLength], size: p.imageSize)
     }
 
+    /// Reads every tensor from the shards now. The weights are loaded lazily (a `Load` primitive per tensor), and MLX's
+    /// `compile` copies a still-lazy captured array into each input signature's graph, so every new signature (size,
+    /// caption length) would evaluate and retain its own full copy of the weights. Evaluated arrays have no primitive and are
+    /// shared by every compiled graph. `compiledForward` (the production prediction) calls it before it traces; the single-block and
+    /// final-layer entry points are parity-only and keep their lazy behavior.
+    func materializeWeights() {
+        eval(Array(weights.tensors.values))
+    }
+
     /// `forward` as one `compile`d graph, the way mflux wraps its sampler's `predict` in `mx.compile` (arguments:
     /// latents, timestep, caption features). Compiled graphs fuse element-wise ops, so results may differ from `forward`.
     public func compiledForward() -> (MLXArray, MLXArray, MLXArray) -> MLXArray {
+        materializeWeights()
         let compiled = compile { (inputs: [MLXArray]) -> [MLXArray] in
             [self.forward(latents: inputs[0], timestep: inputs[1], captionFeatures: inputs[2])]
         }
