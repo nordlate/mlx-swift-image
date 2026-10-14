@@ -17,6 +17,10 @@ public enum ParityTolerance {
     public static let patchTimestepEmbeddingRelativeL2 = 1e-3
     /// A single transformer block from isolated reference input.
     public static let singleBlockRelativeL2 = 1e-3
+    /// The final projection from isolated reference input.
+    public static let finalProjectionRelativeL2 = 1e-3
+    /// The full transformer output from isolated reference input.
+    public static let fullTransformerOutputRelativeL2 = 2e-3
     /// Free-running latent state per scheduler step.
     public static let schedulerLatentPerStepRelativeL2 = 5e-3
     // Seeded noise and scheduler sigmas/timesteps are compared for bitwise equality (no tolerance), as are tensor
@@ -32,6 +36,9 @@ public struct ParityLimits: Sendable {
     public static let patchTimestepEmbedding = ParityLimits(
         relativeL2: ParityTolerance.patchTimestepEmbeddingRelativeL2, normalizedMaxAbs: nil)
     public static let singleBlock = ParityLimits(relativeL2: ParityTolerance.singleBlockRelativeL2, normalizedMaxAbs: nil)
+    public static let finalProjection = ParityLimits(relativeL2: ParityTolerance.finalProjectionRelativeL2, normalizedMaxAbs: nil)
+    public static let fullTransformerOutput = ParityLimits(
+        relativeL2: ParityTolerance.fullTransformerOutputRelativeL2, normalizedMaxAbs: nil)
     public static let schedulerLatentPerStep = ParityLimits(
         relativeL2: ParityTolerance.schedulerLatentPerStepRelativeL2, normalizedMaxAbs: nil)
 }

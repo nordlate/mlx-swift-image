@@ -52,10 +52,16 @@ struct ComponentCases: Decodable {
     let timestepCases: [Timestep]
     let embeddingCases: [Scene]
     let blockCases: [Scene]
+    let blockMiddleCases: [Scene]
+    let blockLastCases: [Scene]
+    let finalCases: [Scene]
+    let outputCases: [Scene]
 
     enum CodingKeys: String, CodingKey {
         case latentCases = "latent_cases", schedulerCases = "scheduler_cases", schedulerChains = "scheduler_chains"
         case timestepCases = "timestep_cases", embeddingCases = "embedding_cases", blockCases = "block_cases"
+        case blockMiddleCases = "block_middle_cases", blockLastCases = "block_last_cases"
+        case finalCases = "final_cases", outputCases = "output_cases"
     }
 
     static func load(_ url: URL) throws -> ComponentCases { try JSONDecoder().decode(ComponentCases.self, from: Data(contentsOf: url)) }
@@ -107,6 +113,21 @@ public enum ComponentCheck {
         if decisive { result.passed = metrics.passed }
         if bytesEqual(native, reference) { result.detail = "bit-identical" }
         return result
+    }
+
+    /// The four comparisons of one core that has an eager and a compiled reference. Only native eager vs MFLUX eager decides
+    /// (the predeclared limit). `mx.compile` fuses element-wise ops, so MFLUX's compiled result may differ from its own eager
+    /// one; that drift, and how the native eager and compiled results sit against both, are recorded, never failed.
+    static func eagerAndCompiled(
+        _ name: String, nativeEager: MLXArray, nativeCompiled: MLXArray, referenceEager: MLXArray, referenceCompiled: MLXArray,
+        limits: ParityLimits
+    ) -> [CheckResult] {
+        [
+            tolerance(name, native: nativeEager, reference: referenceEager, limits: limits),
+            tolerance("\(name): native eager vs MFLUX compiled", native: nativeEager, reference: referenceCompiled, limits: limits, decisive: false),
+            tolerance("\(name): MFLUX eager vs MFLUX compiled (reference drift)", native: referenceEager, reference: referenceCompiled, limits: limits, decisive: false),
+            tolerance("\(name): native compiled vs MFLUX compiled", native: nativeCompiled, reference: referenceCompiled, limits: limits, decisive: false),
+        ]
     }
 
     static func layoutProblem(native: MLXArray, reference: MLXArray) -> String? {

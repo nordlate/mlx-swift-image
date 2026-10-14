@@ -46,6 +46,7 @@ public struct TransformerWeights {
         }
 
         var shardCounts: [String: Int] = [:]
+        var stored: [String: SafetensorsEntry] = [:]
         var mfluxVersion: String?
         for shard in Set(weightMap.values).sorted() {
             let header = try SafetensorsHeader.read(from: dir.appendingPathComponent(shard))
@@ -69,12 +70,14 @@ public struct TransformerWeights {
                 }
             }
             shardCounts[shard] = header.entries.count
+            stored.merge(header.entries) { first, _ in first }
         }
         // The inference mflux's WeightApplier uses for stored quantization: bits from the packed width, group size from
-        // the scales width. Here every matrix must give the layout constants (checked from the stored shapes, not the layout).
+        // the scales width. Here every matrix must give the layout constants, read from the shard headers' stored shapes.
         for m in TransformerLayout.allMatrices {
-            let w = expected[m.name + ".weight"]!.shape.last!
-            let s = expected[m.name + ".scales"]!.shape.last!
+            guard let w = stored[m.name + ".weight"]?.shape.last, let s = stored[m.name + ".scales"]?.shape.last else {
+                throw WeightLoadError.invalid("transformer \(m.name): weight or scales missing from the shard headers")
+            }
             guard w * 32 / m.input == TransformerLayout.bits, m.input / s == TransformerLayout.groupSize else {
                 throw WeightLoadError.invalid("transformer \(m.name): stored shapes imply bits \(w * 32 / m.input), group size \(m.input / s)")
             }

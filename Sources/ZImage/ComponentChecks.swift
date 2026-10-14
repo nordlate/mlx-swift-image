@@ -1,7 +1,8 @@
 import Foundation
 import MLX
 
-/// The five slice 2 checks. Each is independently runnable and returns a report whose `passed` is the verdict.
+/// The component checks (slice 2: latent, scheduler, weights, embeddings, first block; slice 3: middle and last block, final projection,
+/// full transformer output). Each is independently runnable and returns a report whose `passed` is the verdict.
 public enum ComponentParity {
     // MARK: Seeded latents
 
@@ -27,7 +28,8 @@ public enum ComponentParity {
     // MARK: Scheduler
 
     /// Sigmas and timesteps for every offered size and step count (bitwise), and per-step checkpoints of four chains:
-    /// each step from the reference's own state (isolated) and a native free-running chain, against the reference states.
+    /// each step from the reference's own state (bitwise: one deterministic op on identical input) and a native free-running
+    /// chain (within the predeclared relative-L2 limit), against the reference states.
     public static func scheduler(
         referenceDirectory: URL, casesJSON: URL, mlxSwiftRevision: String, log: (String) -> Void = { _ in }
     ) throws -> ComponentReport {
@@ -63,7 +65,7 @@ public enum ComponentParity {
                 let isolated = try scheduler.step(noise: prediction, timestep: t, latents: require(ref, "latents.\(t)", c.id))
                 running = scheduler.step(noise: prediction, timestep: t, latents: running)
                 eval(isolated, running)
-                checks.append(ComponentCheck.tolerance("isolated step \(t)", native: isolated, reference: next, limits: .schedulerLatentPerStep))
+                checks.append(ComponentCheck.exact("isolated step \(t)", native: isolated, reference: next))
                 checks.append(ComponentCheck.tolerance("free-running latents after step \(t)", native: running, reference: next, limits: .schedulerLatentPerStep))
             }
             let result = ComponentCaseResult(id: c.id, checks: checks)
@@ -218,29 +220,65 @@ public enum ComponentParity {
             mlxSwiftRevision: mlxSwiftRevision, manifest: manifest, cases: results)
     }
 
-    // MARK: First transformer block
+    // MARK: Transformer blocks
 
-    /// `layers.0` from the reference's isolated input (the unified sequence the real forward feeds it). The block output
-    /// decides within the predeclared relative-L2 limit; the intermediates are diagnostics that locate a divergence.
+    /// `layers.0` from the reference's isolated input (the unified sequence the real forward feeds it).
     public static func block(
         modelDirectory: URL, referenceDirectory: URL, casesJSON: URL, mlxSwiftRevision: String, log: (String) -> Void = { _ in }
     ) throws -> ComponentReport {
         let cases = try ComponentCases.load(casesJSON)
-        let manifest = try ReferenceInfo.load(directory: referenceDirectory, component: "block")
-        try ComponentCheck.requireCaseList(manifest: manifest, declared: cases.blockCases.map(\.id), what: "block")
+        return try mainBlock(
+            component: "block", layer: 0, cases: cases.blockCases, modelDirectory: modelDirectory, referenceDirectory: referenceDirectory,
+            mlxSwiftRevision: mlxSwiftRevision, log: log)
+    }
+
+    /// `layers.15` from the reference's isolated input.
+    public static func blockMiddle(
+        modelDirectory: URL, referenceDirectory: URL, casesJSON: URL, mlxSwiftRevision: String, log: (String) -> Void = { _ in }
+    ) throws -> ComponentReport {
+        let cases = try ComponentCases.load(casesJSON)
+        return try mainBlock(
+            component: "block-middle", layer: TransformerLayout.layerCount / 2, cases: cases.blockMiddleCases, modelDirectory: modelDirectory,
+            referenceDirectory: referenceDirectory, mlxSwiftRevision: mlxSwiftRevision, log: log)
+    }
+
+    /// `layers.29` from the reference's isolated input.
+    public static func blockLast(
+        modelDirectory: URL, referenceDirectory: URL, casesJSON: URL, mlxSwiftRevision: String, log: (String) -> Void = { _ in }
+    ) throws -> ComponentReport {
+        let cases = try ComponentCases.load(casesJSON)
+        return try mainBlock(
+            component: "block-last", layer: TransformerLayout.layerCount - 1, cases: cases.blockLastCases, modelDirectory: modelDirectory,
+            referenceDirectory: referenceDirectory, mlxSwiftRevision: mlxSwiftRevision, log: log)
+    }
+
+    /// One main block from isolated reference input. The eager block output decides within the predeclared relative-L2 limit;
+    /// the compiled comparisons and the intermediates are diagnostics (compiled fusion is an expected difference, recorded).
+    private static func mainBlock(
+        component: String, layer: Int, cases: [ComponentCases.Scene], modelDirectory: URL, referenceDirectory: URL,
+        mlxSwiftRevision: String, log: (String) -> Void
+    ) throws -> ComponentReport {
+        let manifest = try ReferenceInfo.load(directory: referenceDirectory, component: component)
+        try ComponentCheck.requireCaseList(manifest: manifest, declared: cases.map(\.id), what: component)
         let transformer = ZImageTransformer(weights: try TransformerWeights.load(modelDirectory: modelDirectory))
+        let prefix = "layers.\(layer)."
+        let compiledBlock = transformer.compiledBlock(prefix: prefix)
         var results: [ComponentCaseResult] = []
-        for c in cases.blockCases {
+        for c in cases {
             let ref = try loadArrays(url: referenceDirectory.appendingPathComponent("\(c.id).safetensors"))
             var traced: [String: MLXArray] = [:]
-            let output = try transformer.block(
-                prefix: "layers.0.", x: require(ref, "x", c.id), attentionMask: require(ref, "attn_mask", c.id).asType(.bool),
-                freqsCis: require(ref, "freqs_cis", c.id), timestepEmbedding: require(ref, "t_emb", c.id),
+            let (x, mask) = try (require(ref, "x", c.id), require(ref, "attn_mask", c.id).asType(.bool))
+            let (freqs, tEmb) = try (require(ref, "freqs_cis", c.id), require(ref, "t_emb", c.id))
+            let output = transformer.block(
+                prefix: prefix, x: x, attentionMask: mask, freqsCis: freqs, timestepEmbedding: tEmb,
                 trace: { name, array in
                     if ["modulation", "attn_in", "attn_out", "after_attn", "ffn_out"].contains(name) { eval(array); traced[name] = array }
                 })
-            eval(output)
-            var checks = try [ComponentCheck.tolerance("block output", native: output, reference: require(ref, "output", c.id), limits: .singleBlock)]
+            let compiled = compiledBlock(x, mask, freqs, tEmb)
+            eval(output, compiled)
+            var checks = try ComponentCheck.eagerAndCompiled(
+                "block output", nativeEager: output, nativeCompiled: compiled, referenceEager: require(ref, "output", c.id),
+                referenceCompiled: require(ref, "output_compiled", c.id), limits: .singleBlock)
             for name in ["modulation", "attn_in", "attn_out", "after_attn", "ffn_out"] {
                 guard let native = traced[name], let reference = ref[name] else { continue }
                 checks.append(ComponentCheck.tolerance(name, native: native, reference: reference, limits: .singleBlock, decisive: false))
@@ -250,11 +288,87 @@ public enum ComponentParity {
             results.append(result)
         }
         return ComponentCheck.report(
-            component: "block", tolerances: ["single_block_relative_l2": ParityTolerance.singleBlockRelativeL2],
+            component: component, tolerances: ["single_block_relative_l2": ParityTolerance.singleBlockRelativeL2],
             mlxSwiftRevision: mlxSwiftRevision, manifest: manifest, cases: results)
     }
 
-    private static func require(_ arrays: [String: MLXArray], _ key: String, _ id: String) throws -> MLXArray {
+    // MARK: Final projection
+
+    /// The final layer (adaLN, layer norm, projection) from the reference's isolated input (what the 30th block hands it),
+    /// and unpatchify of the reference's own final-layer output (bitwise).
+    public static func finalProjection(
+        modelDirectory: URL, referenceDirectory: URL, casesJSON: URL, mlxSwiftRevision: String, log: (String) -> Void = { _ in }
+    ) throws -> ComponentReport {
+        let cases = try ComponentCases.load(casesJSON).finalCases
+        let manifest = try ReferenceInfo.load(directory: referenceDirectory, component: "final")
+        try ComponentCheck.requireCaseList(manifest: manifest, declared: cases.map(\.id), what: "final")
+        let transformer = ZImageTransformer(weights: try TransformerWeights.load(modelDirectory: modelDirectory))
+        let compiledFinal = transformer.compiledFinalLayer()
+        var results: [ComponentCaseResult] = []
+        for c in cases {
+            let ref = try loadArrays(url: referenceDirectory.appendingPathComponent("\(c.id).safetensors"))
+            let (x, tEmb) = try (require(ref, "x", c.id), require(ref, "t_emb", c.id))
+            let output = transformer.finalLayer(x, timestepEmbedding: tEmb)
+            let compiled = compiledFinal(x, tEmb)
+            let referenceOutput = try require(ref, "output", c.id)
+            let unpatched = -ZImageTransformer.unpatchify(referenceOutput[0], size: [1, c.height / 8, c.width / 8])
+            eval(output, compiled, unpatched)
+            var checks = try ComponentCheck.eagerAndCompiled(
+                "final projection", nativeEager: output, nativeCompiled: compiled, referenceEager: referenceOutput,
+                referenceCompiled: require(ref, "output_compiled", c.id), limits: .finalProjection)
+            try checks.append(ComponentCheck.exact("unpatchify of the reference final output", native: unpatched, reference: require(ref, "latent_out", c.id)))
+            let result = ComponentCaseResult(id: c.id, checks: checks)
+            log(ComponentCheck.logLine(result))
+            results.append(result)
+        }
+        return ComponentCheck.report(
+            component: "final", tolerances: ["final_projection_relative_l2": ParityTolerance.finalProjectionRelativeL2, "unpatchify": 0],
+            mlxSwiftRevision: mlxSwiftRevision, manifest: manifest, cases: results)
+    }
+
+    // MARK: Full transformer output
+
+    /// The complete forward path (embeddings, both refiners, 30 blocks, final layer, unpatchify) from the reference's
+    /// isolated inputs (seeded latents, timestep, text embedding). The eager output decides within 2e-3; the production
+    /// compiled prediction path and the refiner/stack intermediates are diagnostics.
+    public static func output(
+        modelDirectory: URL, referenceDirectory: URL, casesJSON: URL, mlxSwiftRevision: String, log: (String) -> Void = { _ in }
+    ) throws -> ComponentReport {
+        let cases = try ComponentCases.load(casesJSON).outputCases
+        let manifest = try ReferenceInfo.load(directory: referenceDirectory, component: "output")
+        try ComponentCheck.requireCaseList(manifest: manifest, declared: cases.map(\.id), what: "output")
+        let transformer = ZImageTransformer(weights: try TransformerWeights.load(modelDirectory: modelDirectory))
+        let compiledForward = transformer.compiledForward()
+        var results: [ComponentCaseResult] = []
+        for c in cases {
+            let ref = try loadArrays(url: referenceDirectory.appendingPathComponent("\(c.id).safetensors"))
+            let (latents, timestep, cap) = try (require(ref, "latents", c.id), require(ref, "timestep", c.id), require(ref, "cap_feats", c.id))
+            var trace = ZImageTransformer.ForwardTrace()
+            let output = transformer.forward(latents: latents, timestep: timestep, captionFeatures: cap, trace: { trace = $0 })
+            eval(output)
+            let compiled = compiledForward(latents, timestep, cap)
+            eval(compiled)
+            var checks = try ComponentCheck.eagerAndCompiled(
+                "transformer output", nativeEager: output, nativeCompiled: compiled, referenceEager: require(ref, "output", c.id),
+                referenceCompiled: require(ref, "output_compiled", c.id), limits: .fullTransformerOutput)
+            for (name, native, key) in [
+                ("noise refiner output", trace.noiseRefined, "x_refined"), ("context refiner output", trace.contextRefined, "cap_refined"),
+                ("final layer input (after 30 blocks)", trace.finalLayerInput, "final_in"),
+            ] {
+                guard let native else { continue }
+                eval(native)
+                try checks.append(ComponentCheck.tolerance(name, native: native, reference: require(ref, key, c.id), limits: .fullTransformerOutput, decisive: false))
+            }
+            let result = ComponentCaseResult(id: c.id, checks: checks)
+            log(ComponentCheck.logLine(result))
+            results.append(result)
+        }
+        return ComponentCheck.report(
+            component: "output", tolerances: ["full_transformer_output_relative_l2": ParityTolerance.fullTransformerOutputRelativeL2],
+            mlxSwiftRevision: mlxSwiftRevision, manifest: manifest, cases: results)
+    }
+
+    static func require(_ arrays: [String: MLXArray], _ key: String, _ id: String) throws -> MLXArray {
         guard let array = arrays[key] else { throw ComponentParityError("\(id): reference has no '\(key)'") }
         return array
     }
