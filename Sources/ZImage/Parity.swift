@@ -38,6 +38,10 @@ public enum ParityTolerance {
 public struct ParityLimits: Sendable {
     public let relativeL2: Double
     public let normalizedMaxAbs: Double?
+    public init(relativeL2: Double, normalizedMaxAbs: Double?) {
+        self.relativeL2 = relativeL2
+        self.normalizedMaxAbs = normalizedMaxAbs
+    }
     public static let textEmbedding = ParityLimits(
         relativeL2: ParityTolerance.embeddingRelativeL2, normalizedMaxAbs: ParityTolerance.embeddingNormalizedMaxAbs)
     public static let patchTimestepEmbedding = ParityLimits(

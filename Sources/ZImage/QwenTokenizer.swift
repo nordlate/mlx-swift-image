@@ -51,13 +51,15 @@ public final class QwenTokenizer {
         self.splitRegex = try NSRegularExpression(pattern: pattern)
     }
 
-    public static func load(modelDirectory: URL) throws -> QwenTokenizer {
+    /// `pinnedFileHashes` and `label` default to the Z-Image Turbo pins; another model family passes its own verified hashes
+    /// (and its own chat renderer to `tokenize`). The structural checks below apply to every family.
+    public static func load(modelDirectory: URL, pinnedFileHashes pins: [String: String]? = nil, label: String = "Z-Image Turbo") throws -> QwenTokenizer {
         let dir = modelDirectory.appendingPathComponent("tokenizer")
-        for (name, expected) in pinnedFileHashes {
+        for (name, expected) in pins ?? pinnedFileHashes {
             let data = try Data(contentsOf: dir.appendingPathComponent(name))
             let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
             guard digest == expected else {
-                throw TokenizerError.invalid("\(name) hash \(digest) differs from the pinned Z-Image Turbo file; the native renderer only supports the pinned template and tokenizer")
+                throw TokenizerError.invalid("\(name) hash \(digest) differs from the pinned \(label) file; the native renderer only supports the pinned template and tokenizer")
             }
         }
         let root = try JSONSerialization.jsonObject(with: Data(contentsOf: dir.appendingPathComponent("tokenizer.json"))) as! [String: Any]
@@ -109,12 +111,13 @@ public final class QwenTokenizer {
 
     // MARK: Tokenization
 
-    public func tokenize(_ prompt: String) -> TokenizedPrompt {
+    /// `chat` renders the template for one user message; the default is the Z-Image Turbo rendering.
+    public func tokenize(_ prompt: String, chat: (String) -> String = { QwenTokenizer.renderChat(prompt: $0) }) -> TokenizedPrompt {
         if prompt.isEmpty {
             // mflux special-cases an all-empty batch: int32 [1, 0] arrays, bypassing the template.
             return TokenizedPrompt(inputIDs: [], attentionMask: [], dtype: "mlx.core.int32")
         }
-        var ids = encode(Self.renderChat(prompt: prompt)).map(Int64.init)
+        var ids = encode(chat(prompt)).map(Int64.init)
         if ids.count > Self.maxLength { ids.removeSubrange(Self.maxLength...) }
         let valid = ids.count
         ids += [Int64](repeating: Self.padTokenID, count: Self.maxLength - valid)
