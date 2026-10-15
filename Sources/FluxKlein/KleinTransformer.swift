@@ -29,8 +29,8 @@ public enum KleinTransformerTrace {
 
 /// Port of mflux's `Flux2Transformer` (`flux2/model/flux2_transformer/`), op for op, for FLUX.2 Klein 4B q4 as the production worker
 /// runs it: `guidance=None`, `kv_cache=None`, no reference-image blending, a single batch row. The dtype flow is the reference's: the
-/// timestep embedding is float32 in (the scaled timestep is bfloat16 first), q/k norms run in float32 and cast back, RoPE mixes in
-/// float32 and casts back, everything else stays bfloat16. No classifier-free-guidance branch, KV cache, edit conditioning or
+/// timestep is scaled in the latents' dtype, q/k norms run in float32 (joint casts back; single always casts to bfloat16), and RoPE
+/// mixes in float32 and casts back. Float32 img2img residuals are preserved. No classifier-free-guidance branch, KV cache, edit conditioning or
 /// training support exists here.
 public struct KleinTransformer {
     let weights: KleinTransformerWeights
@@ -55,9 +55,9 @@ public struct KleinTransformer {
             transpose: true, groupSize: KleinTransformerLayout.groupSize, bits: KleinTransformerLayout.bits)
     }
 
-    /// `norm(x.astype(float32)).astype(x.dtype)` with `nn.RMSNorm(dim_head, eps=1e-5)`.
-    func qkNorm(_ x: MLXArray, _ name: String) -> MLXArray {
-        MLXFast.rmsNorm(x.asType(.float32), weight: weights.tensor(name + ".weight"), eps: KleinTransformerLayout.attentionNormEps).asType(x.dtype)
+    /// Joint AttentionUtils restores the projection dtype; parallel single attention explicitly selects ModelConfig.precision (BF16).
+    func qkNorm(_ x: MLXArray, _ name: String, outputDType: DType? = nil) -> MLXArray {
+        MLXFast.rmsNorm(x.asType(.float32), weight: weights.tensor(name + ".weight"), eps: KleinTransformerLayout.attentionNormEps).asType(outputDType ?? x.dtype)
     }
 
     /// `nn.LayerNorm(dim, eps=1e-6, affine=False)`.
@@ -206,8 +206,9 @@ public struct KleinTransformer {
         let (batch, seq) = (qkv[0].dim(0), qkv[0].dim(1))
         let (h, d) = (KleinTransformerLayout.heads, KleinTransformerLayout.headDim)
         func heads(_ x: MLXArray) -> MLXArray { x.reshaped(batch, seq, h, d).transposed(0, 2, 1, 3) }
-        var query = qkNorm(heads(qkv[0]), p + "norm_q")
-        var key = qkNorm(heads(qkv[1]), p + "norm_k")
+        // Flux2ParallelSelfAttention casts normalized Q/K to BF16 before RoPE, even with float32 projections/residuals.
+        var query = qkNorm(heads(qkv[0]), p + "norm_q", outputDType: .bfloat16)
+        var key = qkNorm(heads(qkv[1]), p + "norm_k", outputDType: .bfloat16)
         let value = heads(qkv[2])
         (query, key) = Self.applyRope(query, key, cos: cos, sin: sin)
         let attn = Self.attention(query, key, value)
