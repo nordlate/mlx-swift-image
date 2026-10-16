@@ -114,4 +114,15 @@ public enum KleinStartingImagePaths {
             }
         }
     }
+    /// Creates `url` as a NEW directory: the same freshness, symlink and model-identity checks as `requireNew`, missing parents
+    /// created, then a POSIX `mkdir` of the leaf, which fails atomically with EEXIST. `FileManager.createDirectory(...,
+    /// withIntermediateDirectories: true)` would silently reuse a leaf that appeared after the check.
+    public static func createNewDirectory(_ url: URL,model: URL? = nil) throws {
+        try requireNew(url,model: model)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),withIntermediateDirectories: true)
+        guard mkdir(url.path,0o755) == 0 else {
+            let code = errno
+            throw KleinTransformerError.invalidInput(code == EEXIST ? "output already exists: \(url.path)" : "cannot create output directory \(url.path): \(String(cString: strerror(code)))")
+        }
+    }
 }

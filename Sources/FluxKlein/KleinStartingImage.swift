@@ -13,6 +13,9 @@ public struct KleinPreparedStartingImage {
         guard url.isFileURL else { throw KleinTransformerError.invalidInput("prepared input must be a local PNG file") }
         _ = try KleinLatent.grid(height: height,width: width)
         let data = try Data(contentsOf: url), info = try ZImageImage.pngInfo(at: url)
+        // The bytes validated below (first in-memory read) must be the ones the pinned file digest names; the digest is checked
+        // again after the ImageIO decode (a later read of the file), so a change between the reads cannot pass either one.
+        guard KleinHashing.sha256(of: data) == info.sha256 else { throw KleinTransformerError.invalidInput("input changed during read") }
         guard data.count >= 33, Array(data[8..<12]) == [0,0,0,13], info.width == width, info.height == height,
               info.bitDepth == 8, info.colorType == 2, data[26] == 0, data[27] == 0, data[28] == 0 else {
             throw KleinTransformerError.invalidInput("prepared input must be exact-size, noninterlaced 8-bit RGB PNG")
@@ -92,10 +95,11 @@ public struct KleinStartingImageRequest: Sendable {
         guard start < steps else { throw KleinTransformerError.invalidInput("no remaining denoising step") }
         return start
     }
-    /// Host change slider mapping, written equivalently to the production worker expression.
+    /// Host change slider mapping: the exact expression of `StartingImageStrength.imageStrength` in the app's StartingImage.swift
+    /// (`Double(steps - change + 1) / Double(steps) - 0.5 / Double(steps)`), so every bit pattern the host sends is the one used here.
     public static func strength(steps: Int,change: Int) throws -> Double {
         guard (2...8).contains(steps), (1..<steps).contains(change) else { throw KleinTransformerError.invalidInput("invalid host change") }
-        return (Double(steps-change)+0.5)/Double(steps)
+        return Double(steps-change+1)/Double(steps)-0.5/Double(steps)
     }
     public func validate() throws -> KleinPreparedStartingImage {
         guard !prompt.isEmpty, guidance == 1, scheduler == "flow_match_euler_discrete", !tiling else {

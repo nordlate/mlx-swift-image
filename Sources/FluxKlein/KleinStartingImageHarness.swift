@@ -62,7 +62,7 @@ public enum KleinStartingImageNative {
             reference = try KleinJSON.read(KleinStartingImageManifest.self,from: referenceDirectory.appendingPathComponent("manifest.json"))
             guard reference?.payload.side == "reference", reference?.payload.freeze == frozen else { throw KleinTransformerError.invalidInput("isolated reference freeze/side differs") }
         }
-        try FileManager.default.createDirectory(at: outputDirectory,withIntermediateDirectories: true)
+        try KleinStartingImagePaths.createNewDirectory(outputDirectory,model: modelDirectory)
         var after: [String: String]?, fixtureAfter: [String: String]?
         func audit() throws {
             if after == nil {
