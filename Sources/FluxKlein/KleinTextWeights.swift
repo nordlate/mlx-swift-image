@@ -119,6 +119,7 @@ public struct KleinTextWeights {
     /// Per-tensor name, dtype, shape, byte count and SHA-256 of the loaded bytes (what the reference exporter reports for MFLUX's
     /// applied parameters).
     public func digests() -> [String: KleinTensorDigest] {
+        KleinDigestAudit.record(tensors.count)
         var result: [String: KleinTensorDigest] = [:]
         for (name, array) in tensors {
             eval(array)
@@ -127,6 +128,25 @@ public struct KleinTextWeights {
                 dtype: KleinDType.name(array.dtype), shape: array.shape, bytes: data.count, sha256: KleinHashing.sha256(of: data))
         }
         return result
+    }
+}
+
+/// Counts the tensors hashed by `digests()` inside one `measure` scope (a test seam: the production load path must hash nothing). The count is task-local, so digests computed by
+/// other tests running in parallel, or outside the scope, never reach it.
+public enum KleinDigestAudit {
+    public final class Scope: @unchecked Sendable {
+        private let lock = NSLock()
+        private var total = 0
+        func add(_ count: Int) { lock.lock(); total += count; lock.unlock() }
+        public var tensorCount: Int { lock.lock(); defer { lock.unlock() }; return total }
+    }
+    @TaskLocal static var scope: Scope?
+    static func record(_ count: Int) { scope?.add(count) }
+    /// Runs `body` and returns its result with the number of tensors `digests()` hashed inside it (on this task only).
+    public static func measure<T>(_ body: () throws -> T) rethrows -> (result: T, tensorCount: Int) {
+        let scope = Scope()
+        let result = try $scope.withValue(scope, operation: body)
+        return (result, scope.tensorCount)
     }
 }
 

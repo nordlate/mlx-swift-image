@@ -100,8 +100,8 @@ public enum KleinGenerationNative {
             entries.append(try saveCase(c.id,width: c.width,height: c.height,seed: c.seed,steps: 0,prompt: "",arrays: arrays,out: outputDirectory))
             log("\(c.id): synthetic VAE captured")
         }
-        var weights = prefixed(generator.textDigests,"text_encoder")
-        weights.merge(prefixed(generator.transformerDigests,"transformer")) { a,_ in a }; weights.merge(prefixed(generator.vaeDigests,"vae")) { a,_ in a }
+        var weights = prefixed(generator.textDigests(),"text_encoder")
+        weights.merge(prefixed(generator.transformerDigests(),"transformer")) { a,_ in a }; weights.merge(prefixed(generator.vaeDigests(),"vae")) { a,_ in a }
         let manifest = KleinGenerationManifest(side: "native",freeze: frozen,runtime: try KleinTransformerNative.runtimeInfo(),runtimeModules: [:],
             modelFilesBefore: before,modelFilesAfter: try auditAfter(),weights: weights,
             quantizedModules: quantized(isolated: false),cases: entries)

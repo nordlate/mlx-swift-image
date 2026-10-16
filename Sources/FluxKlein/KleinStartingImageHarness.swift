@@ -133,8 +133,8 @@ public enum KleinStartingImageNative {
         }
         var weights = KleinGenerationNative.prefixed(vae.weights.digests(),"vae")
         if let generator {
-            weights.merge(KleinGenerationNative.prefixed(generator.textDigests,"text_encoder")) { a,_ in a }
-            weights.merge(KleinGenerationNative.prefixed(generator.transformerDigests,"transformer")) { a,_ in a }
+            weights.merge(KleinGenerationNative.prefixed(generator.textDigests(),"text_encoder")) { a,_ in a }
+            weights.merge(KleinGenerationNative.prefixed(generator.transformerDigests(),"transformer")) { a,_ in a }
         }
         var extra: [String: String] = [:]
         if let referenceDirectory { extra["reference_manifest_sha256"] = try KleinHashing.sha256(of: referenceDirectory.appendingPathComponent("manifest.json")) }

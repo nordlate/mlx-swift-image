@@ -111,6 +111,7 @@ public struct KleinTransformerWeights {
     /// Per-tensor dtype, shape, byte count and SHA-256 of the loaded bytes (what the reference exporter reports for MFLUX's applied
     /// transformer parameters).
     public func digests() -> [String: KleinTensorDigest] {
+        KleinDigestAudit.record(tensors.count)
         var result: [String: KleinTensorDigest] = [:]
         for (name, array) in tensors {
             eval(array)

@@ -157,3 +157,21 @@ final class KleinPinsTests: XCTestCase {
         XCTAssertEqual(shards, ["0.safetensors", "1.safetensors"])
     }
 }
+
+/// (The audit counter is scoped to the measuring task, so this test is safe under parallel test execution.)
+/// The production load path hashes no weights (slice 11: ~1.8 s of every Klein load); the harness digests stay available on demand and equal
+/// the weights' own `digests()`.
+final class KleinLoadDigestTests: XCTestCase {
+    func testProductionInitComputesNoDigestsAndHarnessDigestsAreOnDemandAndEqual() throws {
+        let model = try KleinTestSupport.requireModel()
+        let (generator, loadDigested) = try KleinDigestAudit.measure { try KleinGenerator(modelDirectory: model) }
+        XCTAssertEqual(loadDigested, 0, "KleinGenerator.init hashed weights")
+        let ((text, transformer, vae), onDemand) = KleinDigestAudit.measure { (generator.textDigests(), generator.transformerDigests(), generator.vaeDigests()) }
+        XCTAssertEqual(onDemand, text.count + transformer.count + vae.count)
+        XCTAssertEqual([text.count, transformer.count, vae.count], [905, KleinTransformerLayout.tensorCount, KleinVAELayout.tensorCount])
+        // Same tensors, same bytes, same SHA-256 definition as a direct load of the weights.
+        XCTAssertEqual(text, try KleinTextWeights.load(modelDirectory: model).digests())
+        XCTAssertEqual(transformer, try KleinTransformerWeights.load(modelDirectory: model).digests())
+        XCTAssertEqual(vae, try KleinVAEWeights.load(modelDirectory: model).digests())
+    }
+}

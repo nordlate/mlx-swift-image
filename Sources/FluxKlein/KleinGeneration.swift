@@ -37,20 +37,25 @@ public final class KleinGenerator {
     let tokenSummary: (String) -> (valid: Int, untruncated: Int)
     let predict: (MLXArray,MLXArray,MLXArray,MLXArray,MLXArray) -> MLXArray
     public let vae: KleinVAE
-    public let textDigests: [String: KleinTensorDigest], transformerDigests: [String: KleinTensorDigest], vaeDigests: [String: KleinTensorDigest]
+    private let digestSources: (text: KleinTextWeights, transformer: KleinTransformerWeights, vae: KleinVAEWeights)
     public init(modelDirectory: URL) throws {
         let tokenizer = try KleinTokenizer.load(modelDirectory: modelDirectory)
         let text = try KleinTextWeights.load(modelDirectory: modelDirectory), encoder = KleinTextEncoder(weights: text)
         let transformer = try KleinTransformerWeights.load(modelDirectory: modelDirectory), weights = try KleinVAEWeights.load(modelDirectory: modelDirectory)
-        textDigests = text.digests(); transformerDigests = transformer.digests(); vaeDigests = weights.digests()
+        // No weight digests here: hashing every tensor (4.6 GB) cost about 1.8 s of every load, and only the parity harnesses read them (below).
         transformer.materialize()
         predict = KleinTransformer(weights: transformer).compiledPredict()
         vae = KleinVAE(weights: weights)
+        digestSources = (text, transformer, weights)  // the same arrays the encoder, transformer and VAE already hold: no extra memory
         tokenSummary = { prompt in
             (KleinTokenizer.tokenize(prompt,with: tokenizer).validCount,tokenizer.encode(KleinTokenizer.renderChat(prompt: prompt)).count)
         }
         encode = { try KleinPromptEncoder.encode(KleinTokenizer.tokenize($0,with: tokenizer),with: encoder) }
     }
+    /// Per-tensor digests of the loaded weights, computed when asked (parity harnesses only; never on the production load path).
+    public func textDigests() -> [String: KleinTensorDigest] { digestSources.text.digests() }
+    public func transformerDigests() -> [String: KleinTensorDigest] { digestSources.transformer.digests() }
+    public func vaeDigests() -> [String: KleinTensorDigest] { digestSources.vae.digests() }
     /// onStep receives the evaluated post-step latent (1-based). Throwing callbacks abort generation.
     public func generate(_ request: KleinGenerationRequest, onStep: ((Int,MLXArray) throws -> Void)? = nil,
                          trace: ((String,MLXArray) throws -> Void)? = nil) throws -> KleinGenerationOutput {

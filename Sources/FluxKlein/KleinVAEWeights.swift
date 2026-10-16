@@ -98,6 +98,7 @@ public struct KleinVAEWeights {
     }
 
     public func digests() -> [String: KleinTensorDigest] {
+        KleinDigestAudit.record(tensors.count)
         var result: [String: KleinTensorDigest] = [:]
         for (name, array) in tensors {
             eval(array)
