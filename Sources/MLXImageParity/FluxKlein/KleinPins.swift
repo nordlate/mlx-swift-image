@@ -4,7 +4,7 @@ import Foundation
 /// What the text-encoding parity run pins about the snapshot and the MFLUX runtime it is compared with. Nothing here is read on the
 /// inference path; the loaders only check the stored quantization metadata (`KleinPins.storedQuantizationLevel`).
 public extension KleinPins {
-    /// Must equal Package.swift's mlxSwiftRevision (scripts/verify-pins.sh checks the resolved checkout).
+    /// Must equal Package.swift's mlxSwiftRevision; KleinPinsTests pins the value.
     public static let mlxSwiftRevision = "19601207e9a0de51e03ee6ec0c3c5f3784275075"
 
     /// The production reference runtime the measurement was taken with. The comparison fails on any other version, even if both

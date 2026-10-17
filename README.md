@@ -56,7 +56,7 @@ import ZImage
 let zimage = try ZImageGenerator(modelDirectory: URL(fileURLWithPath: "/path/to/z-image-turbo-q4"))
 let image = try zimage.generate(GenerationRequest(prompt: "a lighthouse at dusk", seed: 1, width: 512, height: 512, steps: 8))
 
-// FLUX.2 Klein 4B (steps 1...8); KleinGenerationRequest also takes an optional starting image
+// FLUX.2 Klein 4B (steps 1...8); image to image from a prepared starting image uses KleinStartingImageRequest
 let klein = try KleinGenerator(modelDirectory: URL(fileURLWithPath: "/path/to/flux2-klein-4b-q4"))
 ```
 
