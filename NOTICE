@@ -1,0 +1,42 @@
+mlx-swift-image
+Copyright (c) 2026 Nordlate Oy
+Licensed under the MIT License (see LICENSE).
+
+This project contains Swift ports of the image-generation pipelines in MFLUX. The ports follow MFLUX's
+implementation (operation order, dtype flow and weight layouts) and are checked against it for parity.
+MFLUX's licence notice is reproduced below.
+
+The model architectures were created by their authors, whose reference implementations are:
+
+- FLUX.2 by Black Forest Labs, https://github.com/black-forest-labs/flux2 (Apache License 2.0)
+- Z-Image by Tongyi-MAI (Alibaba), https://github.com/Tongyi-MAI/Z-Image (Apache License 2.0)
+
+This project builds on MLX Swift (https://github.com/ml-explore/mlx-swift, MIT License, Copyright (c) 2023
+ml-explore), resolved as a SwiftPM dependency and not included in this repository.
+
+No model weights are included. Each model's weights are covered by their own licence; see the model cards.
+
+--------------------------------------------------------------------------------
+MFLUX, https://github.com/filipstrand/mflux
+
+MIT License
+
+Copyright (c) 2026 Filip Strand
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
