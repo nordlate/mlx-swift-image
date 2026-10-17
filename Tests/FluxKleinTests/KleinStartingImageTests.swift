@@ -4,7 +4,6 @@ import MLX
 import XCTest
 import MLXImageCore
 @testable import FluxKlein
-import ZImage
 
 private enum StartingFiles {
     static let directory = KleinTestSupport.kleinDirectory.appendingPathComponent("starting-image")
