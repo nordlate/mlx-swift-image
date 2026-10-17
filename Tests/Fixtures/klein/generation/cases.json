@@ -1,0 +1,58 @@
+{
+  "description": "Predeclared slice 3: four independent full generations and two synthetic VAE inputs. Sizes are width x height.",
+  "cases": [
+    {
+      "id": "g1-square1024-plain",
+      "category": "plain",
+      "prompt": "A red bicycle leaning against a weathered brick wall, soft morning light, 35mm photograph",
+      "width": 1024,
+      "height": 1024,
+      "seed": 42,
+      "steps": 4
+    },
+    {
+      "id": "g2-portrait672x896-unicode",
+      "category": "unicode",
+      "prompt": "Hämärä syysilta järven rannalla, sumua ja kuusimetsää. 湖畔の静かな山小屋、夕暮れの霧 Ääkköset: äöå ÄÖÅ",
+      "width": 672,
+      "height": 896,
+      "seed": 7,
+      "steps": 8
+    },
+    {
+      "id": "g3-landscape1152x864-long",
+      "category": "long",
+      "prefix": "A very long list of lanterns: ",
+      "unit": "lantern",
+      "repeat": 700,
+      "separator": ", ",
+      "width": 1152,
+      "height": 864,
+      "seed": 31337,
+      "steps": 6
+    },
+    {
+      "id": "g4-square768-short",
+      "category": "short",
+      "prompt": "cat",
+      "width": 768,
+      "height": 768,
+      "seed": 0,
+      "steps": 1
+    }
+  ],
+  "vae_cases": [
+    {
+      "id": "v1-rect96x64-seeded",
+      "width": 96,
+      "height": 64,
+      "seed": 19
+    },
+    {
+      "id": "v2-square64-seeded",
+      "width": 64,
+      "height": 64,
+      "seed": 0
+    }
+  ]
+}

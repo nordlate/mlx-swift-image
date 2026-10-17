@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 /// Collects the named intermediates of one eager forward pass.
 final class KleinTraceBox {

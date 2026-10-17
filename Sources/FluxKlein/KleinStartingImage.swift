@@ -1,7 +1,7 @@
 import Foundation
 import ImageIO
 import MLX
-import ZImageNative
+import ZImage
 
 /// Only the already prepared, job-owned RGB PNG from StartingImagePreparer is accepted. No raw-photo preprocessing.
 public struct KleinPreparedStartingImage {

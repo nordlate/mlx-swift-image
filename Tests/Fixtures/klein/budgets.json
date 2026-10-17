@@ -1,0 +1,13 @@
+{
+  "_comment": "Frozen limits for the Klein 4B text-encoding parity check, declared before any native or reference result existed. Mirrors KleinBudgets in Sources/KleinNative/KleinBudgets.swift; the comparison fails if the two differ. hs0 is the embedding output (a pure gather + dequantize of stored bytes); hs9/hs18/hs27 are hidden_states_list[9/18/27]; prompt_embeds is their [1, 512, 7680] concatenation. Limits are at least as strict as the Z-Image text-embedding budget (relative L2 1e-3, normalized max abs 1e-2). A mismatch is diagnosed, never widened. Token IDs, masks and text IDs are exact; loaded weights are compared by SHA-256; any non-finite value fails.",
+  "schema": 1,
+  "tensors": {
+    "hs0": {"relative_l2": 1e-6, "normalized_max_abs": 1e-6},
+    "hs9": {"relative_l2": 0.001, "normalized_max_abs": 0.01},
+    "hs18": {"relative_l2": 0.001, "normalized_max_abs": 0.01},
+    "hs27": {"relative_l2": 0.001, "normalized_max_abs": 0.01},
+    "prompt_embeds": {"relative_l2": 0.001, "normalized_max_abs": 0.01}
+  },
+  "exact": ["attention_mask", "input_ids", "text_ids"],
+  "non_finite": "fail"
+}

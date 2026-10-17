@@ -1,0 +1,48 @@
+{
+  "description": "Klein 4B transformer noise-prediction cases (issue #219, slice 2). Frozen: mirrored by KleinTransformerCases.frozen, which the tools compare this file against. Sizes are width x height catalog sizes; the transformer is evaluated at timesteps[timestep_index] of the scheduler for `steps` steps, on the seeded initial latents.",
+  "cases": [
+    {
+      "id": "t1-square1024-plain",
+      "category": "plain",
+      "prompt": "A red bicycle leaning against a weathered brick wall, soft morning light, 35mm photograph",
+      "width": 1024,
+      "height": 1024,
+      "seed": 42,
+      "steps": 4,
+      "timestep_index": 0
+    },
+    {
+      "id": "t2-portrait672x896-unicode",
+      "category": "unicode",
+      "prompt": "Hämärä syysilta järven rannalla, sumua ja kuusimetsää. 湖畔の静かな山小屋、夕暮れの霧 Ääkköset: äöå ÄÖÅ",
+      "width": 672,
+      "height": 896,
+      "seed": 7,
+      "steps": 8,
+      "timestep_index": 3
+    },
+    {
+      "id": "t3-landscape1152x864-long",
+      "category": "long",
+      "prefix": "A very long list of lanterns: ",
+      "unit": "lantern",
+      "repeat": 700,
+      "separator": ", ",
+      "width": 1152,
+      "height": 864,
+      "seed": 31337,
+      "steps": 6,
+      "timestep_index": 5
+    },
+    {
+      "id": "t4-square768-short",
+      "category": "short",
+      "prompt": "cat",
+      "width": 768,
+      "height": 768,
+      "seed": 0,
+      "steps": 1,
+      "timestep_index": 0
+    }
+  ]
+}

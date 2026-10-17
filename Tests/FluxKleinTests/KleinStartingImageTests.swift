@@ -2,8 +2,8 @@ import Darwin
 import Foundation
 import MLX
 import XCTest
-@testable import KleinNative
-import ZImageNative
+@testable import FluxKlein
+import ZImage
 
 private enum StartingFiles {
     static let directory = KleinTestSupport.kleinDirectory.appendingPathComponent("starting-image")

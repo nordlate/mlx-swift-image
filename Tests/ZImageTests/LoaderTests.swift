@@ -1,5 +1,5 @@
 import XCTest
-@testable import ZImageNative
+@testable import ZImage
 
 final class SafetensorsHeaderTests: XCTestCase {
     func testParsesConsistentHeader() throws {

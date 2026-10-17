@@ -1,5 +1,5 @@
 import Foundation
-import ZImageNative
+import ZImage
 
 public struct KleinGenerationCase: Equatable, Sendable {
     public let id: String, category: String, prompt: String

@@ -1,5 +1,5 @@
 import Foundation
-import ZImageNative
+import ZImage
 
 /// Klein's prompt tokenization as mflux's `Flux2KleinWeightDefinition` configures it: `Qwen2TokenizerFast`, the Qwen3 chat template
 /// with `add_generation_prompt` and `enable_thinking: False`, `max_length` 512, right truncation, right padding to `max_length`

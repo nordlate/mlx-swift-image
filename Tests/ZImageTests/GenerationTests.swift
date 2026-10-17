@@ -1,6 +1,6 @@
 import MLX
 import XCTest
-@testable import ZImageNative
+@testable import ZImage
 
 final class VAELayoutTests: XCTestCase {
     func testExpectedTensorsMatchTheSnapshotIndex() {
@@ -123,8 +123,8 @@ final class GenerationRequestTests: XCTestCase {
     }
 
     func testDeclaredGenerationCasesCoverTheDeclaredGrid() throws {
-        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("reference/generation_cases.json")
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/reference/generation_cases.json")
         let cases = try GenerationCases.load(url)
         for list in [cases.denoiseCases, cases.pipelineCases] {
             XCTAssertEqual(Set(list.map(\.steps)).isSuperset(of: [GenerationRequest.stepRange.lowerBound, GenerationRequest.stepRange.upperBound]), true)

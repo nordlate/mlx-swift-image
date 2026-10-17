@@ -2,7 +2,7 @@ import Foundation
 import MLX
 import MLXFast
 import MLXNN
-import ZImageNative
+import ZImage
 
 /// Port of mflux's `Qwen3TextEncoder` (`flux2/model/flux2_text_encoder/qwen3_text_encoder.py`) as Klein 4B runs it, op for op.
 ///

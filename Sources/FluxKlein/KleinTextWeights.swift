@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 /// Klein 4B's text encoder is a Qwen3 4B decoder with exactly the architecture and stored layout of Z-Image Turbo's
 /// (`TextEncoderLayout`: 905 tensors, q4 group size 64, bf16 scales/biases/norms, f32 `rotary_emb.inv_freq`). The shared layout is

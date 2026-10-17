@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 import MLX
 import XCTest
-@testable import KleinNative
+@testable import FluxKlein
 
 private enum TransformerTestFiles {
     static let directory = KleinTestSupport.kleinDirectory.appendingPathComponent("transformer")

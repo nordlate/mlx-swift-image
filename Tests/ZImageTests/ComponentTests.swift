@@ -1,7 +1,7 @@
 import MLX
 import MLXFast
 import XCTest
-@testable import ZImageNative
+@testable import ZImage
 
 final class TransformerLayoutTests: XCTestCase {
     func testExpectedTensorsMatchTheSnapshotIndex() {
@@ -155,8 +155,8 @@ final class CPUComponentTests: XCTestCase {
 
 final class Slice3Tests: XCTestCase {
     func testDeclaredSlice3CaseLists() throws {
-        let json = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("reference/component_cases.json")
+        let json = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/reference/component_cases.json")
         let cases = try ComponentCases.load(json)
         XCTAssertEqual(cases.blockMiddleCases.count, 3)
         XCTAssertEqual(cases.blockLastCases.count, 3)

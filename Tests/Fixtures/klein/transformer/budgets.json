@@ -1,0 +1,26 @@
+{
+  "description": "Klein 4B transformer limits (issue #219, slice 2), declared before any native or reference transformer result existed. Mirrored by KleinTransformerBudgets; the comparison fails if this file differs from the compiled limits. Relative L2 decides; max abs is recorded as a diagnostic, never a tolerance.",
+  "relative_l2": {
+    "embedding": 0.001,
+    "single_block": 0.001,
+    "full_prediction": 0.002,
+    "noise_chain": 0.005,
+    "prompt_embeds": 0.001
+  },
+  "prompt_embeds_normalized_max_abs": 0.01,
+  "zero_reference_absolute": 1e-06,
+  "non_finite": "fail",
+  "exact": [
+    "latents",
+    "latent_ids",
+    "sigmas",
+    "timesteps",
+    "text_ids",
+    "timestep_scaled",
+    "chain_noise.*",
+    "chain.0",
+    "controls (latents, pack/unpack, grid IDs, sigmas, timesteps)",
+    "isolated scheduler step from reference input",
+    "loaded weight SHA-256"
+  ]
+}

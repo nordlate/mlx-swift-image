@@ -1,6 +1,6 @@
 import XCTest
-@testable import KleinNative
-@testable import ZImageNative
+@testable import FluxKlein
+@testable import ZImage
 
 enum KleinTestSupport {
     static var modelDirectory: URL {
@@ -16,10 +16,10 @@ enum KleinTestSupport {
         return url
     }
 
-    /// `klein/` next to Sources/ and Tests/.
+    /// Frozen parity cases and budgets: Tests/Fixtures/klein (copies of the experiment's klein/ inputs).
     static var kleinDirectory: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("klein")
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Fixtures/klein")
     }
 
     /// A layout-consistent index and shard headers (data ranges are irrelevant to header validation), split over two shards.

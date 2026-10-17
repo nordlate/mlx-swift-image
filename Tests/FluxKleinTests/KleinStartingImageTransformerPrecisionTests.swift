@@ -1,7 +1,7 @@
 import Foundation
 import MLX
 import XCTest
-@testable import KleinNative
+@testable import FluxKlein
 
 final class KleinStartingImageTransformerPrecisionTests: XCTestCase {
     /// Independent scalar RMS calculation; values straddle BF16 input rounding so casting before normalization is detectable.

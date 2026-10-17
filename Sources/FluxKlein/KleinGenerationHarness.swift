@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 public struct KleinGenerationEntry: Codable, Equatable, Sendable {
     public var id: String

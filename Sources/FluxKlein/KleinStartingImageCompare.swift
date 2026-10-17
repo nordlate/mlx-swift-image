@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 public enum KleinStartingImageCompare {
     static func rule(_ name: String,isolated: Bool) -> KleinTransformerCompare.Rule {

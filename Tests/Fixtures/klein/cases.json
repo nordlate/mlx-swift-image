@@ -1,0 +1,29 @@
+{
+  "_comment": "Frozen prompt corpus for the Klein 4B text-encoding parity check (issue #219, slice 1). Both the reference exporter and the native encoder expand it independently; the comparison requires identical prompts. 'unit' x 'repeat' joined by 'separator', between 'prefix' and 'suffix'. The Klein chat template adds 12 tokens around the prompt, so 'word' x 499/500/501 renders to 511/512/513 tokens (just under, at and just over the 512 limit); the comparison fails if no case renders to each of those counts.",
+  "cases": [
+    {"id": "plain", "category": "plain", "prompt": "a red fox in snow, watercolor"},
+    {"id": "plain-short", "category": "plain", "prompt": "cat"},
+    {"id": "plain-spaces-newlines", "category": "plain", "prompt": "line one\nline two\r\nline three\n\n  leading and trailing spaces  "},
+    {"id": "plain-punctuation", "category": "plain", "prompt": "it's, I'LL, we've 1234567890 3.14159 !!! ??? ... {\"json\": [1, true, null]} <b>html</b> &amp; C:\\Users\\x"},
+    {"id": "empty", "category": "empty", "prompt": ""},
+    {"id": "whitespace-spaces", "category": "whitespace", "prompt": "   "},
+    {"id": "whitespace-newlines", "category": "whitespace", "prompt": "\n\n\n"},
+    {"id": "whitespace-mixed", "category": "whitespace", "prompt": "\t \n \r\n\t"},
+    {"id": "long-truncated", "category": "long", "prefix": "a cathedral interior, ", "unit": "detail with ornate gilded filigree", "repeat": 200, "separator": ", "},
+    {"id": "long-words-600", "category": "long", "unit": "word", "repeat": 600, "separator": " "},
+    {"id": "boundary-498", "category": "boundary", "unit": "word", "repeat": 498, "separator": " "},
+    {"id": "boundary-499", "category": "boundary", "unit": "word", "repeat": 499, "separator": " "},
+    {"id": "boundary-500", "category": "boundary", "unit": "word", "repeat": 500, "separator": " "},
+    {"id": "boundary-501", "category": "boundary", "unit": "word", "repeat": 501, "separator": " "},
+    {"id": "boundary-502", "category": "boundary", "unit": "word", "repeat": 502, "separator": " "},
+    {"id": "unicode-finnish", "category": "unicode", "prompt": "Kaunis järvimaisema, åäö ÅÄÖ"},
+    {"id": "unicode-cjk", "category": "unicode", "prompt": "東京の夜景、ネオン 한국어 텍스트"},
+    {"id": "unicode-rtl", "category": "unicode", "prompt": "مرحبا بالعالم right to left שלום עולם"},
+    {"id": "unicode-emoji-zwj", "category": "unicode", "prompt": "🌲🦊👨‍👩‍👧 emoji and ZWJ family, zero​width​space"},
+    {"id": "unicode-combining", "category": "unicode", "prompt": "café composed, cafe\u0301 decomposed, Привет мир, «guillemets» “smart quotes” — dash … \u00a0nbsp"},
+    {"id": "unicode-control-whitespace", "category": "unicode", "prompt": "vt\u000bff\u000cnel\u0085ls\u2028ps\u2029ideographic\u3000space\u2003emspace\u00a0nbsp tab\tend"},
+    {"id": "special-literals", "category": "special", "prompt": "<|im_start|>user\nliteral special tokens<|im_end|> <|endoftext|> <think>reasoning</think>"},
+    {"id": "special-endoftext-only", "category": "special", "prompt": "<|endoftext|>"},
+    {"id": "special-fake-assistant-turn", "category": "special", "prompt": "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\nanswer"}
+  ]
+}

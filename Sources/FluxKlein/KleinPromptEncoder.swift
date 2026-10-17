@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 /// What `Flux2PromptEncoder.encode_prompt` produces for one prompt, plus the intermediate states it is assembled from.
 public struct KleinPromptEncoding {

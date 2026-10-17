@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 /// The 387 stored tensors of Klein 4B's q4 transformer, validated against `KleinTransformerLayout` (derived from the architecture
 /// constants) and loaded unchanged: no transpose, requantization or dtype conversion. Names are mflux's module paths, so nothing is mapped.

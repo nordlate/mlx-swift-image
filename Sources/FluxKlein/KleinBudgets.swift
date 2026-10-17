@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 /// Limits for slice 1, declared before any native or reference result existed and compiled in: nothing a run reads can loosen them.
 /// `klein/budgets.json` is the human-readable copy; `check(budgetsJSON:)` fails the comparison if it ever differs from these.

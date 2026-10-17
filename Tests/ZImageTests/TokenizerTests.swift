@@ -1,6 +1,6 @@
 import MLX
 import XCTest
-@testable import ZImageNative
+@testable import ZImage
 
 final class TokenizerUnitTests: XCTestCase {
     func testByteToUnicodeTable() {

@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImageNative
+import ZImage
 
 public struct KleinStartingImageManifest: Codable, Sendable {
     public var payload: KleinGenerationManifest

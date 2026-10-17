@@ -1,0 +1,24 @@
+{
+  "conversion": "exact",
+  "full_pipeline_decoded": "diagnostic",
+  "noise": "diagnostic",
+  "non_finite": "fail",
+  "pixels_max_abs": 2.0,
+  "pixels_mean_abs": 0.1,
+  "png_readback": "exact",
+  "prepared": "exact",
+  "prompt_embeds_normalized_max_abs": 0.01,
+  "relative_l2": {
+    "clean_initial": 0.002,
+    "encoded": 0.002,
+    "encoder_component": 0.001,
+    "isolated_decoder": 0.002,
+    "post_step": 0.005,
+    "prompt_embeds": 0.001,
+    "same_input_patch_bn_pack": 0.001
+  },
+  "seeded_noise_grid_schedule_start_callbacks": "exact",
+  "source_rgb": "exact",
+  "weights": "exact",
+  "zero_reference_absolute": 1e-06
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "height": 768,
+    "id": "i1-square768-mid",
+    "prompt": "A red bicycle leaning against a brick wall.",
+    "seed": 42,
+    "steps": 4,
+    "strength": 0.625,
+    "width": 768
+  },
+  {
+    "height": 896,
+    "id": "i2-portrait672x896-many",
+    "prompt": "A small cabin beside a Finnish lake at sunrise.",
+    "seed": 7,
+    "steps": 8,
+    "strength": 0.1875,
+    "width": 672
+  },
+  {
+    "height": 672,
+    "id": "i3-landscape896x672-one",
+    "prompt": "A warm lantern on a wooden table.",
+    "seed": 31337,
+    "steps": 8,
+    "strength": 0.9375,
+    "width": 896
+  },
+  {
+    "height": 1024,
+    "id": "i4-square1024-min",
+    "prompt": "A blue ceramic bowl.",
+    "seed": 0,
+    "steps": 2,
+    "strength": 0.75,
+    "width": 1024
+  },
+  {
+    "height": 64,
+    "id": "e1-rect96x64",
+    "prompt": "",
+    "seed": 19,
+    "steps": 0,
+    "strength": 0.0,
+    "width": 96
+  },
+  {
+    "height": 64,
+    "id": "e2-square64",
+    "prompt": "",
+    "seed": 0,
+    "steps": 0,
+    "strength": 0.0,
+    "width": 64
+  }
+]

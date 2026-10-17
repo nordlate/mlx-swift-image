@@ -1,8 +1,8 @@
 import Foundation
 import MLX
 import XCTest
-@testable import KleinNative
-@testable import ZImageNative
+@testable import FluxKlein
+@testable import ZImage
 
 final class KleinTensorComparisonTests: XCTestCase {
     private let limit = KleinBudgets.tensors["hs9"]!

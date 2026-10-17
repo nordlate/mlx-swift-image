@@ -1,0 +1,18 @@
+{
+  "conversion": "exact",
+  "full_pipeline_decoded": "diagnostic",
+  "noise": "diagnostic",
+  "non_finite": "fail",
+  "pixels_max_abs": 2,
+  "pixels_mean_abs": 0.1,
+  "png_readback": "exact",
+  "prompt_embeds_normalized_max_abs": 0.01,
+  "relative_l2": {
+    "post_step": 0.005,
+    "prompt_embeds": 0.001,
+    "vae_complete": 0.002,
+    "vae_component": 0.001
+  },
+  "weights": "exact",
+  "zero_reference_absolute": 1e-06
+}

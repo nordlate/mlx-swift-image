@@ -2,8 +2,8 @@ import Darwin
 import Foundation
 import MLX
 import XCTest
-@testable import KleinNative
-@testable import ZImageNative
+@testable import FluxKlein
+@testable import ZImage
 
 private enum GenerationTestFiles {
     static var dir: URL { KleinTestSupport.kleinDirectory.appendingPathComponent("generation") }

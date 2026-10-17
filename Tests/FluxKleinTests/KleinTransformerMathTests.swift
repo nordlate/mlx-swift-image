@@ -1,7 +1,7 @@
 import Foundation
 import MLX
 import XCTest
-@testable import KleinNative
+@testable import FluxKlein
 
 final class KleinTransformerMathTests: XCTestCase {
     func testPackUnpackPreservesChannelAndSpatialOrder() throws {

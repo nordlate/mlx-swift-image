@@ -1,7 +1,7 @@
 import Darwin
 import Foundation
 import XCTest
-@testable import KleinNative
+@testable import FluxKlein
 
 /// Slice 5 source guards: the host's exact strength expression, and a fresh-directory creation that cannot reuse an existing leaf.
 final class KleinHostStrengthTests: XCTestCase {
