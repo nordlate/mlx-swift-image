@@ -107,24 +107,4 @@ public struct KleinTransformerWeights {
     public func materialize() {
         eval(Array(tensors.values))
     }
-
-    /// Per-tensor dtype, shape, byte count and SHA-256 of the loaded bytes (what the reference exporter reports for MFLUX's applied
-    /// transformer parameters).
-    public func digests() -> [String: KleinTensorDigest] {
-        KleinDigestAudit.record(tensors.count)
-        var result: [String: KleinTensorDigest] = [:]
-        for (name, array) in tensors {
-            eval(array)
-            let data = KleinCompare.bytes(array)
-            result[name] = KleinTensorDigest(dtype: KleinDType.name(array.dtype), shape: array.shape, bytes: data.count, sha256: KleinHashing.sha256(of: data))
-        }
-        return result
-    }
-
-    /// The module the applier quantizes at the stored precision: all 109 matrices, 4-bit, group 64, affine.
-    public static func quantizedModules() -> [KleinQuantizedModule] {
-        KleinTransformerLayout.matrices().map {
-            KleinQuantizedModule(name: $0.name, bits: KleinTransformerLayout.bits, groupSize: KleinTransformerLayout.groupSize, mode: "affine")
-        }
-    }
 }

@@ -22,15 +22,15 @@ final class KleinStartingImageTransformerPrecisionTests: XCTestCase {
             let keys: [Float] = [1.004,1.003,0.001,-0.001, 1.004,-1.003,0.001,0.001]
             let projectedQ = MLXArray(queries).reshaped(1,1,2,4), projectedK = MLXArray(keys).reshaped(1,1,2,4)
             let projectedV = MLXArray([Float(1.003),-0.003,2.001,0.007,3.004,-1.001,0.009,4.003]).reshaped(1,1,2,4)
-            let originalQ = KleinCompare.bytes(projectedQ), originalK = KleinCompare.bytes(projectedK), originalV = KleinCompare.bytes(projectedV)
+            let originalQ = KleinTensorValues.bytes(projectedQ), originalK = KleinTensorValues.bytes(projectedK), originalV = KleinTensorValues.bytes(projectedV)
             let q = transformer.qkNorm(projectedQ,names[0],outputDType: .bfloat16)
             let k = transformer.qkNorm(projectedK,names[1],outputDType: .bfloat16)
             for (actual,input,name) in [(q,queries,names[0]),(k,keys,names[1])] {
                 let expected = MLXArray(normalized(input,width: 4,weight: [1,1,1,1])).reshaped(1,1,2,4).asType(.bfloat16)
                 XCTAssertEqual(actual.dtype,.bfloat16)
-                XCTAssertEqual(KleinCompare.bytes(actual),KleinCompare.bytes(expected))
+                XCTAssertEqual(KleinTensorValues.bytes(actual),KleinTensorValues.bytes(expected))
                 let prematurelyRounded = transformer.qkNorm(MLXArray(input).reshaped(1,1,2,4).asType(.bfloat16),name,outputDType: .bfloat16)
-                XCTAssertNotEqual(KleinCompare.bytes(actual),KleinCompare.bytes(prematurelyRounded),"normalization must consume float32 projections")
+                XCTAssertNotEqual(KleinTensorValues.bytes(actual),KleinTensorValues.bytes(prematurelyRounded),"normalization must consume float32 projections")
             }
             let cos = MLXArray([Float(0.6),0.8,0.8,0.6]).reshaped(2,2), sin = MLXArray([Float(0.8),0.6,0.6,0.8]).reshaped(2,2)
             let (rotatedQ,rotatedK) = KleinTransformer.applyRope(q,k,cos: cos,sin: sin)
@@ -43,11 +43,11 @@ final class KleinStartingImageTransformerPrecisionTests: XCTestCase {
                     expected.append(floats[2*pair]*cs[pair] + (-floats[2*pair+1])*ss[pair])
                     expected.append(floats[2*pair+1]*cs[pair] + floats[2*pair]*ss[pair])
                 }
-                XCTAssertEqual(KleinCompare.bytes(actual),KleinCompare.bytes(MLXArray(expected).reshaped(1,1,2,4).asType(.bfloat16)))
+                XCTAssertEqual(KleinTensorValues.bytes(actual),KleinTensorValues.bytes(MLXArray(expected).reshaped(1,1,2,4).asType(.bfloat16)))
             }
             XCTAssertEqual(projectedV.dtype,.float32)
-            XCTAssertEqual(KleinCompare.bytes(projectedQ),originalQ); XCTAssertEqual(KleinCompare.bytes(projectedK),originalK)
-            XCTAssertEqual(KleinCompare.bytes(projectedV),originalV)
+            XCTAssertEqual(KleinTensorValues.bytes(projectedQ),originalQ); XCTAssertEqual(KleinTensorValues.bytes(projectedK),originalK)
+            XCTAssertEqual(KleinTensorValues.bytes(projectedV),originalV)
         }
     }
 
@@ -58,12 +58,12 @@ final class KleinStartingImageTransformerPrecisionTests: XCTestCase {
             let previous = transformer.qkNorm(projected,"norm") // Original projection-dtype restoration.
             let corrected = transformer.qkNorm(projected,"norm",outputDType: .bfloat16)
             XCTAssertEqual(previous.dtype,.bfloat16); XCTAssertEqual(corrected.dtype,.bfloat16)
-            XCTAssertEqual(KleinCompare.bytes(corrected),KleinCompare.bytes(previous))
+            XCTAssertEqual(KleinTensorValues.bytes(corrected),KleinTensorValues.bytes(previous))
             let cos = MLXArray([Float(0.6),0.8,0.8,0.6]).reshaped(2,2), sin = MLXArray([Float(0.8),0.6,0.6,0.8]).reshaped(2,2)
             let oldRope = KleinTransformer.applyRope(previous,previous,cos: cos,sin: sin)
             let newRope = KleinTransformer.applyRope(corrected,corrected,cos: cos,sin: sin)
-            XCTAssertEqual(KleinCompare.bytes(oldRope.0),KleinCompare.bytes(newRope.0))
-            XCTAssertEqual(KleinCompare.bytes(oldRope.1),KleinCompare.bytes(newRope.1))
+            XCTAssertEqual(KleinTensorValues.bytes(oldRope.0),KleinTensorValues.bytes(newRope.0))
+            XCTAssertEqual(KleinTensorValues.bytes(oldRope.1),KleinTensorValues.bytes(newRope.1))
         }
     }
 

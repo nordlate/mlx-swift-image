@@ -33,11 +33,11 @@ public enum TransformerLayout {
 
     /// A 4-bit affine-quantized `nn.Linear` `[out, in]`: packed U32 `[out, in*bits/32]`, BF16 scales/biases
     /// `[out, in/group]`, plus a BF16 `bias` `[out]` when the layer has one.
-    struct Quantized {
-        let name: String
-        let out: Int
-        let input: Int
-        let bias: Bool
+    public struct Quantized {
+        public let name: String
+        public let out: Int
+        public let input: Int
+        public let bias: Bool
     }
 
     /// Quantized linears of one transformer/refiner block.
@@ -74,7 +74,7 @@ public enum TransformerLayout {
     }
 
     /// Every quantized matrix of the model.
-    static var allMatrices: [Quantized] {
+    public static var allMatrices: [Quantized] {
         topLevelMatrices + blockPrefixes.flatMap { blockMatrices($0.prefix, modulated: $0.modulated) }
     }
 

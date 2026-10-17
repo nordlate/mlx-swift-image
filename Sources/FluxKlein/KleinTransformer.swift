@@ -27,7 +27,7 @@ public enum KleinTransformerTrace {
     public static let allKeys: [String] = embeddingKeys + blockKeys + finalKeys
 }
 
-/// Port of mflux's `Flux2Transformer` (`flux2/model/flux2_transformer/`), op for op, for FLUX.2 Klein 4B q4 as the production worker
+/// Port of mflux's `Flux2Transformer` (`flux2/model/flux2_transformer/`), op for op, for FLUX.2 Klein 4B q4 as the production path
 /// runs it: `guidance=None`, `kv_cache=None`, no reference-image blending, a single batch row. The dtype flow is the reference's: the
 /// timestep is scaled in the latents' dtype, q/k norms run in float32 (joint casts back; single always casts to bfloat16), and RoPE
 /// mixes in float32 and casts back. Float32 img2img residuals are preserved. No classifier-free-guidance branch, KV cache, edit conditioning or
@@ -49,7 +49,7 @@ public struct KleinTransformer {
     // MARK: Building blocks
 
     /// `nn.QuantizedLinear.__call__` (no bias stored): `quantized_matmul(x, weight, scales, biases, transpose=True)`.
-    func linear(_ x: MLXArray, _ name: String) -> MLXArray {
+    public func linear(_ x: MLXArray, _ name: String) -> MLXArray {
         quantizedMM(
             x, weights.tensor(name + ".weight"), scales: weights.tensor(name + ".scales"), biases: weights.tensor(name + ".biases"),
             transpose: true, groupSize: KleinTransformerLayout.groupSize, bits: KleinTransformerLayout.bits)
@@ -92,14 +92,14 @@ public struct KleinTransformer {
         return t * scale
     }
 
-    func timestepEmbedding(_ scaled: MLXArray) -> MLXArray {
+    public func timestepEmbedding(_ scaled: MLXArray) -> MLXArray {
         linear(silu(linear(Self.timestepFrequencies(scaled), "time_guidance_embed.linear_1")), "time_guidance_embed.linear_2")
     }
 
     // MARK: Rotary
 
     /// `Flux2PosEmbed.__call__`: per-axis (theta 2000, 4 axes of 32) cos/sin of `id * omega`, concatenated: `[N, 64]` float32 each.
-    static func rotaryTables(ids: MLXArray) -> (cos: MLXArray, sin: MLXArray) {
+    public static func rotaryTables(ids: MLXArray) -> (cos: MLXArray, sin: MLXArray) {
         let pos = ids.asType(.float32)
         var cosOut: [MLXArray] = [], sinOut: [MLXArray] = []
         for (axis, dim) in KleinTransformerLayout.axesDims.enumerated() {
@@ -164,7 +164,7 @@ public struct KleinTransformer {
     }
 
     /// `Flux2Modulation.__call__`: `[B, 1, 3 * sets * dim]` split into `sets` (shift, scale, gate) triples.
-    func modulation(_ temb: MLXArray, name: String, sets: Int) -> [[MLXArray]] {
+    public func modulation(_ temb: MLXArray, name: String, sets: Int) -> [[MLXArray]] {
         var mod = linear(silu(temb), name + ".linear")
         if mod.ndim == 2 { mod = expandedDimensions(mod, axis: 1) }
         let parts = mod.split(parts: 3 * sets, axis: -1)
@@ -172,7 +172,7 @@ public struct KleinTransformer {
     }
 
     /// `Flux2TransformerBlock.__call__`. Returns (encoder, hidden).
-    func doubleBlock(
+    public func doubleBlock(
         _ i: Int, hidden: MLXArray, encoder: MLXArray, modImg: [[MLXArray]], modTxt: [[MLXArray]], cos: MLXArray, sin: MLXArray
     ) -> (encoder: MLXArray, hidden: MLXArray) {
         let p = "transformer_blocks.\(i)."
@@ -195,7 +195,7 @@ public struct KleinTransformer {
     }
 
     /// `Flux2SingleTransformerBlock.__call__` with `Flux2ParallelSelfAttention`: one fused qkv + SwiGLU-MLP projection.
-    func singleBlock(_ i: Int, hidden: MLXArray, mod: [MLXArray], cos: MLXArray, sin: MLXArray) -> MLXArray {
+    public func singleBlock(_ i: Int, hidden: MLXArray, mod: [MLXArray], cos: MLXArray, sin: MLXArray) -> MLXArray {
         let p = "single_transformer_blocks.\(i).attn."
         let (shift, scale, gate) = (mod[0], mod[1], mod[2])
         let normHidden = (1 + scale) * Self.layerNorm(hidden) + shift
@@ -217,7 +217,7 @@ public struct KleinTransformer {
     }
 
     /// `AdaLayerNormContinuous.__call__`: `norm(x) * (1 + scale) + shift` from `linear(silu(temb))`.
-    func normOut(_ x: MLXArray, temb: MLXArray) -> MLXArray {
+    public func normOut(_ x: MLXArray, temb: MLXArray) -> MLXArray {
         let t = linear(silu(temb).asType(.bfloat16), "norm_out.linear")
         let dim = KleinTransformerLayout.dim
         let scale = t[0..., 0 ..< dim], shift = t[0..., dim ..< (2 * dim)]
@@ -288,8 +288,8 @@ public struct KleinTransformer {
         return linear(hidden, "proj_out")
     }
 
-    /// `Flux2Klein._predict`'s compiled `predict` for the worker's call: `mx.compile` of the transformer with `guidance=None` (no
-    /// negative branch, since the worker's guidance is 1.0). Arguments: latents, latent IDs, prompt embeddings, text IDs, timestep.
+    /// `Flux2Klein._predict`'s compiled `predict` for the production call: `mx.compile` of the transformer with `guidance=None` (no
+    /// negative branch, since the guidance is 1.0). Arguments: latents, latent IDs, prompt embeddings, text IDs, timestep.
     /// The weights are materialized first so every compiled input signature shares one evaluated copy.
     public func compiledPredict() -> (MLXArray, MLXArray, MLXArray, MLXArray, MLXArray) -> MLXArray {
         weights.materialize()

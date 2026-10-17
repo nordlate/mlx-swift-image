@@ -1,7 +1,7 @@
 import Foundation
 import MLX
 
-/// Port of mflux's `FlowMatchEulerDiscreteScheduler` as the worker drives Klein 4B:
+/// Port of mflux's `FlowMatchEulerDiscreteScheduler` as generation drives Klein 4B:
 /// `Config(model_config=flux2_klein_4b, guidance=1.0, scheduler="flow_match_euler_discrete")`.
 ///
 /// `ModelConfig.flux2_klein_4b().requires_sigma_shift` is `True`, so `Config.scheduler` calls `set_image_seq_len((H/16) * (W/16))` right
@@ -10,7 +10,7 @@ import MLX
 /// to float32 when it meets `mx.exp`), then `timesteps = sigmas * 1000` and a trailing 0 sigma.
 public struct KleinScheduler {
     public static let numTrainTimesteps = 1000
-    /// The step counts the worker supports for Klein (1 through 8); nothing else is supported.
+    /// The step counts supported for Klein (1 through 8); nothing else is supported.
     public static let offeredSteps = 1...8
 
     public let steps: Int
@@ -53,7 +53,7 @@ public struct KleinScheduler {
         return a * steps + b
     }
 
-    /// The step the worker takes, compiled shapeless exactly as mflux's module-level `_step`:
+    /// The step generation takes, compiled shapeless exactly as mflux's module-level `_step`:
     /// `latents + (s1 - s2).astype(latents.dtype) * noise.astype(latents.dtype)` with `s1 = sigmas[t + 1]`, `s2 = sigmas[t]`.
     /// Compiling matters: the compiled graph keeps its own bfloat16 rounding points, which an eager version would not reproduce.
     static let compiledStep: @Sendable ([MLXArray]) -> [MLXArray] = compile(shapeless: true) { (inputs: [MLXArray]) -> [MLXArray] in

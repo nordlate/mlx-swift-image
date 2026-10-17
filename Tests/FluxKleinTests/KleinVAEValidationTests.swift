@@ -63,7 +63,6 @@ final class KleinVAEValidationTests: XCTestCase {
         let model = try KleinTestSupport.requireModel()
         let result = try KleinVAEWeights.readAndValidate(modelDirectory: model)
         XCTAssertEqual(result.weightCount,266); XCTAssertEqual(result.shards,["0.safetensors"])
-        XCTAssertEqual(KleinGenerationPins.modelFiles.count,11); XCTAssertEqual(KleinGenerationPins.runtimeModules.count,53)
     }
 }
 

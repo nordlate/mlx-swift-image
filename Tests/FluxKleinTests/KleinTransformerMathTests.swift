@@ -13,7 +13,7 @@ final class KleinTransformerMathTests: XCTestCase {
             XCTAssertEqual(packed.asArray(Float.self), [0, 6, 1, 7, 2, 8, 3, 9, 4, 10, 5, 11])
             let unpacked = try KleinLatent.unpack(packed, height: 32, width: 48)
             XCTAssertEqual(unpacked.shape, x.shape)
-            XCTAssertEqual(KleinCompare.bytes(unpacked), KleinCompare.bytes(x))
+            XCTAssertEqual(KleinTensorValues.bytes(unpacked), KleinTensorValues.bytes(x))
             XCTAssertThrowsError(try KleinLatent.unpack(packed, height: 48, width: 48))
             XCTAssertThrowsError(try KleinLatent.pack(MLXArray.zeros([2, 3])))
             XCTAssertThrowsError(try KleinLatent.unpack(x, height: 31, width: 48))
@@ -61,7 +61,6 @@ final class KleinTransformerMathTests: XCTestCase {
                 XCTAssertEqual(scheduler.sigmas.shape, [n + 1])
                 XCTAssertEqual(scheduler.timesteps.shape, [n])
                 XCTAssertEqual(scheduler.sigmas.dtype, .float32)
-                XCTAssertEqual(KleinTransformerCompare.scheduleFailures(side: "test", label: "n\(n)", sigmas: scheduler.sigmas, timesteps: scheduler.timesteps), [])
             }
             for n in [0, 9, -1] { XCTAssertThrowsError(try KleinScheduler(steps: n, height: 32, width: 48)) }
             XCTAssertThrowsError(try KleinScheduler(steps: 4, height: 33, width: 48))
@@ -93,7 +92,7 @@ final class KleinTransformerMathTests: XCTestCase {
             let (qr, kr) = KleinTransformer.applyRope(q, q, cos: MLXArray.zeros([1, 2]), sin: MLXArray.ones([1, 2]))
             XCTAssertEqual(qr.dtype, .bfloat16)
             XCTAssertEqual(qr.asType(.float32).asArray(Float.self), [-2, 1, -4, 3])
-            XCTAssertEqual(KleinCompare.bytes(qr), KleinCompare.bytes(kr))
+            XCTAssertEqual(KleinTensorValues.bytes(qr), KleinTensorValues.bytes(kr))
             let frequencies = KleinTransformer.timestepFrequencies(MLXArray([Float(0)]))
             XCTAssertEqual(frequencies.shape, [1, 256])
             XCTAssertEqual(frequencies.dtype, .float32)

@@ -34,7 +34,7 @@ public enum ImageOutput {
         try encodePNG(pixels: pixels).write(to: url)
     }
 
-    /// The PNG file image `writePNG` writes, in memory (the worker publishes it atomically itself).
+    /// The PNG file image `writePNG` writes, in memory (the caller decides how to publish it).
     public static func encodePNG(pixels: MLXArray) throws -> Data {
         guard let image = try cgImage(pixels: pixels) else { throw ImageError.invalid("cannot create an image from the pixels") }
         let data = NSMutableData()
@@ -45,7 +45,7 @@ public enum ImageOutput {
         return data as Data
     }
 
-    /// A small JPEG of `[H, W, 3]` uint8 pixels whose longest side is at most `maxSide` (the worker's step preview).
+    /// A small JPEG of `[H, W, 3]` uint8 pixels whose longest side is at most `maxSide` (for step previews).
     public static func previewJPEG(pixels: MLXArray, maxSide: Int) throws -> Data {
         guard let image = try cgImage(pixels: pixels) else { throw ImageError.invalid("cannot create an image from the pixels") }
         let scale = min(1.0, Double(maxSide) / Double(max(image.width, image.height)))

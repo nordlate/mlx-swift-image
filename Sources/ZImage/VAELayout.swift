@@ -63,7 +63,7 @@ public enum VAELayout {
     }
 
     /// The quantized linears of the whole VAE.
-    static var quantizedLinears: [String] { attentionLinears("encoder.mid_block") + attentionLinears("decoder.mid_block") }
+    public static var quantizedLinears: [String] { attentionLinears("encoder.mid_block") + attentionLinears("decoder.mid_block") }
 
     /// Every tensor the snapshot must hold, with its stored dtype and shape.
     public static func expectedTensors() -> [String: (dtype: String, shape: [Int])] {

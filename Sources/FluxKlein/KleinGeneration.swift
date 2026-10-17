@@ -31,31 +31,28 @@ public struct KleinGenerationOutput {
         try ImageOutput.encodePNG(pixels: pixels).write(to: url,options: .withoutOverwriting)
     }
 }
-/// One reusable compiled prediction closure per generator. No VAE encoder, previews, worker integration or VAE compilation.
+/// One reusable compiled prediction closure per generator. No VAE encoder, previews or VAE compilation.
 public final class KleinGenerator {
     let encode: (String) throws -> KleinPromptEncoding
-    let tokenSummary: (String) -> (valid: Int, untruncated: Int)
+    public let tokenSummary: (String) -> (valid: Int, untruncated: Int)
     let predict: (MLXArray,MLXArray,MLXArray,MLXArray,MLXArray) -> MLXArray
     public let vae: KleinVAE
-    private let digestSources: (text: KleinTextWeights, transformer: KleinTransformerWeights, vae: KleinVAEWeights)
+    /// The loaded weights (the arrays the encoder, transformer and VAE already hold). The parity harness reads them to compute digests.
+    public let weights: (text: KleinTextWeights, transformer: KleinTransformerWeights, vae: KleinVAEWeights)
     public init(modelDirectory: URL) throws {
         let tokenizer = try KleinTokenizer.load(modelDirectory: modelDirectory)
         let text = try KleinTextWeights.load(modelDirectory: modelDirectory), encoder = KleinTextEncoder(weights: text)
-        let transformer = try KleinTransformerWeights.load(modelDirectory: modelDirectory), weights = try KleinVAEWeights.load(modelDirectory: modelDirectory)
-        // No weight digests here: hashing every tensor (4.6 GB) cost about 1.8 s of every load, and only the parity harnesses read them (below).
+        let transformer = try KleinTransformerWeights.load(modelDirectory: modelDirectory), vaeWeights = try KleinVAEWeights.load(modelDirectory: modelDirectory)
+        // No weight digests here: hashing every tensor (4.6 GB) cost about 1.8 s of every load, and only the parity harnesses (MLXImageParity) read them.
         transformer.materialize()
         predict = KleinTransformer(weights: transformer).compiledPredict()
-        vae = KleinVAE(weights: weights)
-        digestSources = (text, transformer, weights)  // the same arrays the encoder, transformer and VAE already hold: no extra memory
+        vae = KleinVAE(weights: vaeWeights)
+        weights = (text, transformer, vaeWeights)  // the same arrays the encoder, transformer and VAE already hold: no extra memory
         tokenSummary = { prompt in
             (KleinTokenizer.tokenize(prompt,with: tokenizer).validCount,tokenizer.encode(KleinTokenizer.renderChat(prompt: prompt)).count)
         }
         encode = { try KleinPromptEncoder.encode(KleinTokenizer.tokenize($0,with: tokenizer),with: encoder) }
     }
-    /// Per-tensor digests of the loaded weights, computed when asked (parity harnesses only; never on the production load path).
-    public func textDigests() -> [String: KleinTensorDigest] { digestSources.text.digests() }
-    public func transformerDigests() -> [String: KleinTensorDigest] { digestSources.transformer.digests() }
-    public func vaeDigests() -> [String: KleinTensorDigest] { digestSources.vae.digests() }
     /// onStep receives the evaluated post-step latent (1-based). Throwing callbacks abort generation.
     public func generate(_ request: KleinGenerationRequest, onStep: ((Int,MLXArray) throws -> Void)? = nil,
                          trace: ((String,MLXArray) throws -> Void)? = nil) throws -> KleinGenerationOutput {
@@ -86,13 +83,7 @@ public final class KleinGenerator {
 public enum KleinGenerationPixels {
     public static func convert(_ decoded: MLXArray, width: Int, height: Int) throws -> MLXArray {
         guard width > 0, height > 0, decoded.shape == [1,3,height,width], decoded.dtype == .bfloat16,
-              KleinCompare.floats(decoded).allSatisfy(\.isFinite) else { throw KleinTransformerError.invalidInput("decoded tensor shape/dtype/nonfinite") }
+              KleinTensorValues.floats(decoded).allSatisfy(\.isFinite) else { throw KleinTransformerError.invalidInput("decoded tensor shape/dtype/nonfinite") }
         return ImageOutput.pixels(decoded: decoded)
-    }
-    public static func budget(native: [UInt8], reference: [UInt8]) -> (max: Int, mean: Double, passed: Bool) {
-        guard native.count == reference.count, !native.isEmpty else { return (256, .infinity, false) }
-        let diffs = zip(native,reference).map { abs(Int($0)-Int($1)) }
-        let maximum = diffs.max()!, mean = Double(diffs.reduce(0,+))/Double(diffs.count)
-        return (maximum,mean,Double(maximum) <= KleinGenerationBudgets.pixelMax && mean <= KleinGenerationBudgets.pixelMean)
     }
 }

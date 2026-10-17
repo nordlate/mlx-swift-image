@@ -29,7 +29,7 @@ public enum KleinPromptEncoder {
         return stacked(rows, axis: 0)
     }
 
-    /// Encodes one tokenized prompt (a single row, as the worker does): a padded `[1, 512]` int64 batch, or the `[1, 0]` int32 batch
+    /// Encodes one tokenized prompt (a single row, as production generation does): a padded `[1, 512]` int64 batch, or the `[1, 0]` int32 batch
     /// mflux's tokenizer returns for the empty prompt. Production MFLUX runs the empty batch through the same MLX operations and gets
     /// zero-length states (`[1, 0, 2560]`), embeddings (`[1, 0, 7680]`) and text IDs (`[1, 0, 4]`); so does this, with no special path.
     public static func encode(_ tokens: TokenizedPrompt, with encoder: KleinTextEncoder) throws -> KleinPromptEncoding {

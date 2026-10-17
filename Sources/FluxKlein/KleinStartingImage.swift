@@ -9,6 +9,9 @@ public struct KleinPreparedStartingImage {
     public let rgb: [UInt8]
     public let fileSHA256: String
     public var rgbSHA256: String { KleinHashing.sha256(of: Data(rgb)) }
+    public init(width: Int, height: Int, rgb: [UInt8], fileSHA256: String) {
+        self.width = width; self.height = height; self.rgb = rgb; self.fileSHA256 = fileSHA256
+    }
     public static func load(_ url: URL, width: Int, height: Int) throws -> Self {
         guard url.isFileURL else { throw KleinTransformerError.invalidInput("prepared input must be a local PNG file") }
         _ = try KleinLatent.grid(height: height,width: width)

@@ -96,21 +96,4 @@ public struct KleinVAEWeights {
     public func materialize() {
         eval(Array(tensors.values))
     }
-
-    public func digests() -> [String: KleinTensorDigest] {
-        KleinDigestAudit.record(tensors.count)
-        var result: [String: KleinTensorDigest] = [:]
-        for (name, array) in tensors {
-            eval(array)
-            let data = KleinCompare.bytes(array)
-            result[name] = KleinTensorDigest(dtype: KleinDType.name(array.dtype), shape: array.shape, bytes: data.count, sha256: KleinHashing.sha256(of: data))
-        }
-        return result
-    }
-
-    public static func quantizedModules() -> [KleinQuantizedModule] {
-        KleinVAELayout.matrices().map {
-            KleinQuantizedModule(name: $0.name, bits: KleinVAELayout.bits, groupSize: KleinVAELayout.groupSize, mode: "affine")
-        }
-    }
 }

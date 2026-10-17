@@ -13,7 +13,7 @@ extension KleinVAE {
     public func encodePrepared(_ image: MLXArray, trace: ((String, MLXArray) throws -> Void)? = nil) throws -> MLXArray {
         guard image.ndim == 4, image.dim(0) == 1, image.dim(1) == 3, image.dim(2) >= 16, image.dim(3) >= 16,
               image.dim(2) % 16 == 0, image.dim(3) % 16 == 0, image.dtype == .float32,
-              KleinCompare.floats(image).allSatisfy(\.isFinite) else {
+              KleinTensorValues.floats(image).allSatisfy(\.isFinite) else {
             throw KleinTransformerError.invalidInput("encoder requires finite float32 [1,3,H,W], H/W multiples of 16")
         }
         func record(_ n: String, _ a: MLXArray) throws { try trace?(n,a.transposed(0,3,1,2)) }

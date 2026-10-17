@@ -6,7 +6,7 @@ import MLXNN
 /// Port of mflux's Z-Image `ZImageTransformer` up to its output: patch, caption and timestep embeddings, rotary tables,
 /// the modulated blocks, the noise and context refiners, the 30 main blocks, the final layer and unpatchify. Op-for-op
 /// the same graph as the Python reference, so the dtype flow is too (for example, the timestep embedding is float32 and
-/// promotes the block's activations to float32). The sampler loop, VAE and worker protocol are not part of this type.
+/// promotes the block's activations to float32). The sampler loop, VAE and request handling are not part of this type.
 public struct ZImageTransformer {
     let weights: TransformerWeights
     let rope: ZImageRope
@@ -241,6 +241,10 @@ extension ZImageTransformer {
         /// The unified sequence the final layer consumes (output of the 30th main block).
         public var finalLayerInput: MLXArray?
         public var finalLayerOutput: MLXArray?
+        public init(noiseRefined: MLXArray? = nil, contextRefined: MLXArray? = nil, finalLayerInput: MLXArray? = nil, finalLayerOutput: MLXArray? = nil) {
+            self.noiseRefined = noiseRefined; self.contextRefined = contextRefined
+            self.finalLayerInput = finalLayerInput; self.finalLayerOutput = finalLayerOutput
+        }
     }
 
     /// The whole forward path up to the transformer output (`ZImageTransformer.__call__` without controlnet samples):

@@ -2,18 +2,19 @@
 // MLXSwiftImage: native MLX image generation for Apple silicon (Z-Image Turbo q4, FLUX.2 Klein 4B q4). Unofficial; not affiliated with ml-explore.
 import PackageDescription
 
-// Pinned by commit, not by version string. A consumer that builds the worker for release should also check the checked-out gitlinks of
+// Pinned by commit, not by version string. A consumer that builds for release should also check the checked-out gitlinks of
 // mlx-swift's submodules (MLX core, mlx-c) against the values it expects.
 let mlxSwiftRevision = "19601207e9a0de51e03ee6ec0c3c5f3784275075"  // release 0.32.3
 
 let package = Package(
     name: "MLXSwiftImage",
-    // The helper and its Metal target are validated against 26.2; a host app may target an older macOS, since it only launches the helper.
+    // The Metal target is validated against 26.2.
     platforms: [.macOS("26.2")],
     products: [
         .library(name: "MLXImageCore", targets: ["MLXImageCore"]),
         .library(name: "ZImage", targets: ["ZImage"]),
         .library(name: "FluxKlein", targets: ["FluxKlein"]),
+        .library(name: "MLXImageParity", targets: ["MLXImageParity"]),
     ],
     dependencies: [
         .package(url: "https://github.com/ml-explore/mlx-swift", revision: mlxSwiftRevision),
@@ -46,9 +47,21 @@ let package = Package(
                 .product(name: "MLXFast", package: "mlx-swift"),
             ]
         ),
+        // The parity and validation harness for both models: frozen cases and budgets, reference comparison, native exports, pins and
+        // manifests. Depends on the model modules; they never depend on it.
+        .target(
+            name: "MLXImageParity",
+            dependencies: [
+                "MLXImageCore", "ZImage", "FluxKlein",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift"),
+                .product(name: "MLXFast", package: "mlx-swift"),
+            ]
+        ),
         .testTarget(name: "MLXImageCoreTests", dependencies: ["MLXImageCore"]),
         .testTarget(name: "FluxKleinTests", dependencies: ["FluxKlein", "MLXImageCore"]),
         .testTarget(name: "ZImageTests", dependencies: ["ZImage", "MLXImageCore"]),
+        .testTarget(name: "MLXImageParityTests", dependencies: ["MLXImageParity", "ZImage", "FluxKlein", "MLXImageCore"]),
     ],
     swiftLanguageModes: [.v5]
 )

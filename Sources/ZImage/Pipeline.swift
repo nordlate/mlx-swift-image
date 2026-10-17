@@ -70,7 +70,7 @@ public final class ZImageDenoiser {
     }
 
     /// `1 - sigma[t]` as `[1]` float32, as the generation loop computes the timestep.
-    static func timestep(_ scheduler: LinearScheduler, step t: Int) -> MLXArray {
+    public static func timestep(_ scheduler: LinearScheduler, step t: Int) -> MLXArray {
         let sigma = scheduler.sigmas[t].reshaped(1)
         return MLX.ones(like: sigma) - sigma
     }

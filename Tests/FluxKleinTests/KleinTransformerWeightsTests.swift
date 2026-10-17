@@ -104,7 +104,5 @@ final class KleinTransformerWeightValidationTests: XCTestCase {
         let (count, shards) = try KleinTransformerWeights.readAndValidate(modelDirectory: KleinTestSupport.requireModel())
         XCTAssertEqual(count, 387)
         XCTAssertEqual(shards, ["0.safetensors", "1.safetensors"])
-        XCTAssertEqual(KleinTransformerPins.modelFiles.count, 9)
-        XCTAssertEqual(KleinTransformerPins.runtimeModules.count, 28)
     }
 }
