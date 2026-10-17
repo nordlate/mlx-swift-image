@@ -13,9 +13,17 @@ port of the reference Python/MFLUX pipelines, checked against frozen parity case
 
 ## Models
 
+| Model | Product | Modes | Steps | Upstream model card (weights licence) | Parity |
+|---|---|---|---|---|---|
+| FLUX.2 Klein 4B, q4 | `FluxKlein` | text to image, image to image | 1...8 | [black-forest-labs/FLUX.2-klein-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B) | pixel-identical to MFLUX on the golden cases |
+| Z-Image Turbo, q4 | `ZImage` | text to image | 4...12 | [Tongyi-MAI/Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) | pixel-identical to MFLUX on the golden cases |
+
 Model weights are **not included** and are not downloaded by this package. Each model has its own licence and terms: check the model cards of the
 snapshots you use before running or redistributing them. The loaders read pre-quantized (q4) snapshots in the `mflux-save` layout and have no
 quantizer of their own.
+
+> **No safeguards.** These pipelines run the models directly. They do not include the content filters, safety checkers or other safeguards
+> that model makers or hosted services may provide. If you ship them in an app, you are responsible for any safeguards your use needs.
 
 ## Requirements
 
@@ -42,10 +50,10 @@ parity inputs in `Tests/Fixtures`.
 
 ## Using the library
 
-Add the package at a pinned revision and depend on the library products you need (`MLXImageCore`, `ZImage`, `FluxKlein`, and `MLXImageParity` only if you run the parity harness):
+Add the package at a pinned version (or revision) and depend on the library products you need (`MLXImageCore`, `ZImage`, `FluxKlein`, and `MLXImageParity` only if you run the parity harness):
 
 ```swift
-.package(url: "https://github.com/nordlate/mlx-swift-image", revision: "<commit>")
+.package(url: "https://github.com/nordlate/mlx-swift-image", exact: "0.1.0")
 ```
 
 ```swift
@@ -80,6 +88,15 @@ Tests that need model files or a reference export skip themselves with a message
 
 Without any of them the model-dependent tests are skipped and the rest run.
 
+## Versioning
+
+Semantic versioning, with a release tag per version; changes are listed per product in `CHANGELOG.md`. Before 1.0.0 a minor version may change
+the public API. Pinning a tag or a commit is recommended.
+
+## Contributing
+
+Maintained for the needs of the app that uses it (Taltio); contributions are welcome. See `CONTRIBUTING.md`.
+
 ## Licence
 
-MIT, see `LICENSE`. Model weights are separate and covered by their own licences.
+MIT, see `LICENSE`. The ports derive from MFLUX (MIT); attributions are in `NOTICE`. Model weights are separate and covered by their own licences.
