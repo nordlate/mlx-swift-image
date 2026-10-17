@@ -3,9 +3,9 @@ import Foundation
 import XCTest
 @testable import FluxKlein
 
-/// Slice 5 source guards: the host's exact strength expression, and a fresh-directory creation that cannot reuse an existing leaf.
+/// Slice 5 source guards: the exact host-side strength expression, and a fresh-directory creation that cannot reuse an existing leaf.
 final class KleinHostStrengthTests: XCTestCase {
-    /// `StartingImageStrength.imageStrength` in the app's StartingImage.swift, restated verbatim.
+    /// The expression a host app uses to map a strength slider to `imageStrength`, restated verbatim.
     private func host(_ steps: Int, _ change: Int) -> Double { Double(steps - change + 1) / Double(steps) - 0.5 / Double(steps) }
 
     func testAll28HostPairsMapToTheHostsExactBitPattern() throws {

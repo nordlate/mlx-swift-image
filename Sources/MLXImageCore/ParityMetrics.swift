@@ -1,7 +1,7 @@
 import Foundation
 
-/// Stage tolerances for text embeddings, as declared in advance in NATIVE_MLX_PLAN.md (Stage 3 tolerance table,
-/// merged before any native result existed). They are constants here on purpose: nothing a run reads can loosen them.
+/// Stage tolerances for text embeddings, as declared in advance, in a tolerance table
+/// fixed before any native result existed. They are constants here on purpose: nothing a run reads can loosen them.
 public enum ParityTolerance {
     public static let embeddingRelativeL2 = 1e-3
     public static let embeddingNormalizedMaxAbs = 1e-2
@@ -10,7 +10,7 @@ public enum ParityTolerance {
     /// Zero-reference fallback: absolute L2 norm and max abs difference of native vs reference, each at most this.
     public static let zeroFallbackAbsolute = 1e-6
 
-    // Slice 2 rows, also from the Stage 3 table in NATIVE_MLX_PLAN.md (merged before any native result existed).
+    // Slice 2 rows, also from that table (fixed before any native result existed).
     // Relative L2 is the only deciding metric of these rows; max abs is reported as diagnostic.
     /// Patch/timestep embeddings from isolated reference input.
     public static let patchTimestepEmbeddingRelativeL2 = 1e-3
@@ -22,7 +22,7 @@ public enum ParityTolerance {
     public static let fullTransformerOutputRelativeL2 = 2e-3
     /// Free-running latent state per scheduler step.
     public static let schedulerLatentPerStepRelativeL2 = 5e-3
-    // Slice 4 rows, from the same Stage 3 table in NATIVE_MLX_PLAN.md.
+    // Slice 4 rows, from the same table.
     /// The VAE output tensor.
     public static let vaeOutputRelativeL2 = 2e-3
     /// Decoded pixels: max abs difference in uint8 levels.

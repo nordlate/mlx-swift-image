@@ -15,7 +15,7 @@ public enum KleinPins {
 
     /// The frozen corpus (`klein/cases.json`): its SHA-256 and case count were recorded before any measurement. A changed corpus fails
     /// the comparison even when both sides ran the same changed file.
-    public static let frozenCasesSHA256 = "26964ceba2bf2dc054943f63b36ea11b1332b2ca6ec4b6d51ba96504b9c008dc"
+    public static let frozenCasesSHA256 = "d1df6e4c85a4db951f9818162875a1197a781b03b285f3365fac047c0249f162"
     public static let frozenCaseCount = 24
 
     public static let tokenizerFiles: [String: String] = [

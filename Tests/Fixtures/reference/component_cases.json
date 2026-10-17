@@ -1,5 +1,5 @@
 {
- "_comment": "Predeclared case lists for the slice 2 component parity checks (seeded latents, scheduler, q4 transformer weights, patch/timestep embeddings, first block). Explicit lists, read by both the Python reference exporters and the native checker, so neither side expands them. Sizes are the six offered Z-Image Turbo sizes (LocalModelCatalog.standardSizes); steps cover the offered range 4...12; prompt ids refer to cases.json. Written before any slice 2 result existed.",
+ "_comment": "Predeclared case lists for the slice 2 component parity checks (seeded latents, scheduler, q4 transformer weights, patch/timestep embeddings, first block). Explicit lists, read by both the Python reference exporters and the native checker, so neither side expands them. Sizes are the six supported Z-Image Turbo sizes; steps cover the supported range 4...12; prompt ids refer to cases.json. Written before any slice 2 result existed.",
  "latent_cases": [
   {
    "id": "noise-s0-1024x1024",

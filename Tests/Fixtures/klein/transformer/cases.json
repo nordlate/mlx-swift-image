@@ -1,5 +1,5 @@
 {
-  "description": "Klein 4B transformer noise-prediction cases (issue #219, slice 2). Frozen: mirrored by KleinTransformerCases.frozen, which the tools compare this file against. Sizes are width x height catalog sizes; the transformer is evaluated at timesteps[timestep_index] of the scheduler for `steps` steps, on the seeded initial latents.",
+  "description": "Klein 4B transformer noise-prediction cases (slice 2). Frozen: mirrored by KleinTransformerCases.frozen, which the tools compare this file against. Sizes are width x height sizes; the transformer is evaluated at timesteps[timestep_index] of the scheduler for `steps` steps, on the seeded initial latents.",
   "cases": [
     {
       "id": "t1-square1024-plain",

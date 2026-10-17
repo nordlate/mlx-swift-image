@@ -1,5 +1,5 @@
 {
-  "description": "Klein 4B transformer limits (issue #219, slice 2), declared before any native or reference transformer result existed. Mirrored by KleinTransformerBudgets; the comparison fails if this file differs from the compiled limits. Relative L2 decides; max abs is recorded as a diagnostic, never a tolerance.",
+  "description": "Klein 4B transformer limits (slice 2), declared before any native or reference transformer result existed. Mirrored by KleinTransformerBudgets; the comparison fails if this file differs from the compiled limits. Relative L2 decides; max abs is recorded as a diagnostic, never a tolerance.",
   "relative_l2": {
     "embedding": 0.001,
     "single_block": 0.001,

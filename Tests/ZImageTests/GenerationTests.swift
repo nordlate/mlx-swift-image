@@ -54,7 +54,7 @@ final class VAELayoutTests: XCTestCase {
 }
 
 final class SliceFourToleranceTests: XCTestCase {
-    /// The VAE and pixel rows of the Stage 3 table in NATIVE_MLX_PLAN.md; a change here is a loosening needing an owner record.
+    /// The VAE and pixel rows of the pre-declared tolerance table; a change here is a loosening needing an explicit, recorded approval.
     func testLimitsEqualThePredeclaredTable() {
         XCTAssertEqual(ParityTolerance.vaeOutputRelativeL2, 2e-3)
         XCTAssertEqual(ParityLimits.vaeOutput.relativeL2, 2e-3)

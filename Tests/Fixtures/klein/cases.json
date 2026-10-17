@@ -1,5 +1,5 @@
 {
-  "_comment": "Frozen prompt corpus for the Klein 4B text-encoding parity check (issue #219, slice 1). Both the reference exporter and the native encoder expand it independently; the comparison requires identical prompts. 'unit' x 'repeat' joined by 'separator', between 'prefix' and 'suffix'. The Klein chat template adds 12 tokens around the prompt, so 'word' x 499/500/501 renders to 511/512/513 tokens (just under, at and just over the 512 limit); the comparison fails if no case renders to each of those counts.",
+  "_comment": "Frozen prompt corpus for the Klein 4B text-encoding parity check (slice 1). Both the reference exporter and the native encoder expand it independently; the comparison requires identical prompts. 'unit' x 'repeat' joined by 'separator', between 'prefix' and 'suffix'. The Klein chat template adds 12 tokens around the prompt, so 'word' x 499/500/501 renders to 511/512/513 tokens (just under, at and just over the 512 limit); the comparison fails if no case renders to each of those counts.",
   "cases": [
     {"id": "plain", "category": "plain", "prompt": "a red fox in snow, watercolor"},
     {"id": "plain-short", "category": "plain", "prompt": "cat"},

@@ -8,7 +8,8 @@ Native Swift inference for image generation on Apple silicon, built on [MLX Swif
 The package also contains `zimage-worker`, a small helper process that runs one of these models for a host app over a JSON-lines protocol on
 stdin/stdout.
 
-> **Unofficial.** This project is not affiliated with, endorsed by or maintained by Apple or the ml-explore/MLX project.
+> **Unofficial.** This project is not affiliated with, endorsed by or maintained by Apple or the ml-explore/MLX project, nor by the authors of the
+> models it runs (Z-Image: Alibaba Tongyi-MAI; FLUX.2: Black Forest Labs).
 
 It started inside the Taltio app, which embeds the worker for local image generation, and was extracted into its own package. The Swift code is a
 port of the reference Python/MFLUX pipelines, checked against frozen parity cases and golden pixels.
@@ -33,7 +34,7 @@ quantizer of their own.
 | `MLXImageCore` | What both models share: the Qwen3 q4 text-encoder layout and ops, the Qwen tokenizer, safetensors header checks, parity metrics, PNG/JPEG output |
 | `ZImage` | Z-Image Turbo: text encoder, transformer, scheduler, VAE, weight loaders, parity helpers |
 | `FluxKlein` | FLUX.2 Klein 4B: text encoder, transformer, VAE (with encoder for starting images), scheduler, pins, parity harnesses |
-| `ImageWorker` | The worker library: request validation, engines for both models, event stream, atomic file output |
+| `ImageWorker` | The worker implementation used by the `zimage-worker` executable: request validation, engines for both models, event stream, atomic file output. Its contract types are internal, not a consumable API |
 | `zimage-worker` | The worker executable (a thin `main.swift` over `ImageWorker`) |
 
 `ZImage` and `FluxKlein` depend on `MLXImageCore` and never on each other. The two models keep separate text encoders, schedulers, VAEs and
@@ -45,7 +46,7 @@ Other directories: `Tests/` (with frozen parity inputs in `Tests/Fixtures`), `To
 
 ## Using the library
 
-Add the package at a pinned revision and depend on the products you need (`MLXImageCore`, `ZImage`, `FluxKlein`, `ImageWorker`):
+Add the package at a pinned revision and depend on the library products you need (`MLXImageCore`, `ZImage`, `FluxKlein`):
 
 ```swift
 .package(url: "https://github.com/nordlate/mlx-swift-image", revision: "<commit>")

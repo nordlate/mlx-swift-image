@@ -34,7 +34,7 @@ final class TransformerLayoutTests: XCTestCase {
 }
 
 final class SlicePredeclaredLimitTests: XCTestCase {
-    /// The values of the Stage 3 table in NATIVE_MLX_PLAN.md; a change here is a loosening that needs an owner-approved record.
+    /// The values of the pre-declared tolerance table; a change here is a loosening that needs an explicit, recorded approval.
     func testLimitsEqualThePredeclaredTable() {
         XCTAssertEqual(ParityTolerance.patchTimestepEmbeddingRelativeL2, 1e-3)
         XCTAssertEqual(ParityTolerance.singleBlockRelativeL2, 1e-3)
