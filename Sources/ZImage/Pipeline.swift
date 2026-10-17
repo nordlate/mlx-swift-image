@@ -4,7 +4,7 @@ import MLXImageCore
 
 /// One text-to-image job for Z-Image Turbo.
 public struct GenerationRequest: Equatable, Sendable {
-    /// Z-Image Turbo's offered step range (`LocalModelCatalog`: 4...12, default 8).
+    /// Z-Image Turbo's supported step range (4...12).
     public static let stepRange = 4 ... 12
 
     public var prompt: String

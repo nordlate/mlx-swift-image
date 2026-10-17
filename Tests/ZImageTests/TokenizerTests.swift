@@ -39,8 +39,9 @@ final class RealTokenizerTests: XCTestCase {
     /// Token IDs, masks, shapes and dtypes must equal the Python/MFLUX reference exactly for every exported case.
     func testTokensMatchReferenceExport() throws {
         let model = try TestSupport.requireModel()
-        let manifestURL = TestSupport.referenceDirectory.appendingPathComponent("manifest.json")
-        try XCTSkipUnless(FileManager.default.fileExists(atPath: manifestURL.path), "reference export not found at \(manifestURL.path); run Experiments/native-mlx-zimage/scripts/run-parity.sh or set ZIMAGE_REFERENCE_DIR")
+        guard let reference = TestSupport.referenceDirectory else { throw XCTSkip("ZIMAGE_REFERENCE_DIR is not set; point it at a Python/MFLUX reference export") }
+        let manifestURL = reference.appendingPathComponent("manifest.json")
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: manifestURL.path), "ZIMAGE_REFERENCE_DIR: reference export not found at \(manifestURL.path)")
         let manifest = try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as! [String: Any]
         let tok = try QwenTokenizer.load(modelDirectory: model)
         let cases = manifest["cases"] as! [[String: Any]]
@@ -52,7 +53,7 @@ final class RealTokenizerTests: XCTestCase {
             XCTAssertEqual(out.validCount, c["num_valid"] as! Int, id)
             XCTAssertEqual(out.shape, c["ids_shape"] as! [Int], id)
             XCTAssertEqual(out.dtype, c["ids_dtype"] as! String, id)
-            let ref = try loadArrays(url: TestSupport.referenceDirectory.appendingPathComponent("\(id).safetensors"))
+            let ref = try loadArrays(url: reference.appendingPathComponent("\(id).safetensors"))
             XCTAssertEqual(out.inputIDs, ref["input_ids"]!.asArray(Int64.self), id)
             XCTAssertEqual(out.attentionMask, ref["attention_mask"]!.asArray(Int64.self), id)
             XCTAssertEqual(ref["attention_mask"]!.shape, out.shape, id)

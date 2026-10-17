@@ -3,16 +3,17 @@ import XCTest
 @testable import MLXImageCore
 
 enum KleinTestSupport {
-    static var modelDirectory: URL {
-        let path = ProcessInfo.processInfo.environment["KLEIN_Q4_MODEL_DIR"]
-            ?? NSHomeDirectory() + "/Library/Containers/com.nordlate.taltio/Data/Library/Application Support/LocalModels/models/flux2-klein-4b-q4"
+    /// The read-only FLUX.2 Klein 4B q4 snapshot (`KLEIN_Q4_MODEL_DIR`, or `KLEIN_MODEL_DIR`); nil when neither is set.
+    static var modelDirectory: URL? {
+        let environment = ProcessInfo.processInfo.environment
+        guard let path = environment["KLEIN_Q4_MODEL_DIR"] ?? environment["KLEIN_MODEL_DIR"], !path.isEmpty else { return nil }
         return URL(fileURLWithPath: path, isDirectory: true)
     }
 
     static func requireModel() throws -> URL {
-        let url = modelDirectory
+        guard let url = modelDirectory else { throw XCTSkip("KLEIN_MODEL_DIR is not set; point it at a FLUX.2 Klein 4B q4 snapshot") }
         try XCTSkipUnless(FileManager.default.fileExists(atPath: url.appendingPathComponent("text_encoder/model.safetensors.index.json").path),
-                          "Klein q4 snapshot not installed at \(url.path)")
+                          "KLEIN_MODEL_DIR: Klein q4 snapshot not found at \(url.path)")
         return url
     }
 

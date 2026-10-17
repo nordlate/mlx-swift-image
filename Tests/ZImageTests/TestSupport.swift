@@ -2,27 +2,24 @@ import Foundation
 import XCTest
 
 enum TestSupport {
-    /// The read-only q4 snapshot; tests that need it are skipped when it is not installed.
-    static var modelDirectory: URL {
-        let path = ProcessInfo.processInfo.environment["ZIMAGE_Q4_MODEL_DIR"]
-            ?? NSHomeDirectory() + "/Library/Containers/com.nordlate.taltio/Data/Library/Application Support/LocalModels/models/z-image-turbo-q4"
+    /// The read-only Z-Image Turbo q4 snapshot (`ZIMAGE_Q4_MODEL_DIR`, or `ZIMAGE_MODEL_DIR`); nil when neither is set.
+    static var modelDirectory: URL? {
+        let environment = ProcessInfo.processInfo.environment
+        guard let path = environment["ZIMAGE_Q4_MODEL_DIR"] ?? environment["ZIMAGE_MODEL_DIR"], !path.isEmpty else { return nil }
         return URL(fileURLWithPath: path, isDirectory: true)
     }
 
     static func requireModel() throws -> URL {
-        let url = modelDirectory
+        guard let url = modelDirectory else { throw XCTSkip("ZIMAGE_MODEL_DIR is not set; point it at a Z-Image Turbo q4 snapshot") }
         try XCTSkipUnless(FileManager.default.fileExists(atPath: url.appendingPathComponent("text_encoder/model.safetensors.index.json").path),
-                          "q4 snapshot not installed at \(url.path)")
+                          "ZIMAGE_MODEL_DIR: q4 snapshot not found at \(url.path)")
         return url
     }
 
-    /// Reference artifacts written by the experiment's scripts/run-parity.sh (ignored build output); ZIMAGE_REFERENCE_DIR overrides the
-    /// default `<repo>/Experiments/native-mlx-zimage/build/reference`.
-    static var referenceDirectory: URL {
-        if let path = ProcessInfo.processInfo.environment["ZIMAGE_REFERENCE_DIR"] {
-            return URL(fileURLWithPath: path, isDirectory: true)
-        }
-        return URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent().appendingPathComponent("Experiments/native-mlx-zimage/build/reference", isDirectory: true)
+    /// Reference artifacts exported from the Python/MFLUX implementation (`ZIMAGE_REFERENCE_DIR`); the tests that read them are
+    /// skipped when it is unset or the export is missing.
+    static var referenceDirectory: URL? {
+        guard let path = ProcessInfo.processInfo.environment["ZIMAGE_REFERENCE_DIR"], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true)
     }
 }

@@ -95,7 +95,7 @@ public struct KleinStartingImageRequest: Sendable {
         guard start < steps else { throw KleinTransformerError.invalidInput("no remaining denoising step") }
         return start
     }
-    /// Host change slider mapping: the exact expression of `StartingImageStrength.imageStrength` in the app's StartingImage.swift
+    /// Host change slider mapping: the exact expression a host app uses to map a strength slider to `imageStrength`
     /// (`Double(steps - change + 1) / Double(steps) - 0.5 / Double(steps)`), so every bit pattern the host sends is the one used here.
     public static func strength(steps: Int,change: Int) throws -> Double {
         guard (2...8).contains(steps), (1..<steps).contains(change) else { throw KleinTransformerError.invalidInput("invalid host change") }

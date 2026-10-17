@@ -1,16 +1,15 @@
 // swift-tools-version: 6.0
 // MLXSwiftImage: native MLX image generation for Apple silicon (Z-Image Turbo q4, FLUX.2 Klein 4B q4). Unofficial; not affiliated with ml-explore.
-// Taltio embeds the `zimage-worker` product as its production runtime: LocalWorker/build-native.sh builds it from here (pinned by
-// LocalWorker/native.lock); the Xcode project does not reference the package.
+// Built for the `zimage-worker` product, a helper process that apps embed as their local-generation runtime (see README.md).
 import PackageDescription
 
-// Pinned by commit, not by version string. LocalWorker/build-native.sh checks the checked-out gitlinks of mlx-swift's submodules
-// (MLX core, mlx-c) against the values in LocalWorker/native.lock.
+// Pinned by commit, not by version string. A consumer that builds the worker for release should also check the checked-out gitlinks of
+// mlx-swift's submodules (MLX core, mlx-c) against the values it expects.
 let mlxSwiftRevision = "19601207e9a0de51e03ee6ec0c3c5f3784275075"  // release 0.32.3
 
 let package = Package(
     name: "MLXSwiftImage",
-    // The helper and its Metal target are validated against 26.2; the Taltio app stays at 15.3.
+    // The helper and its Metal target are validated against 26.2; a host app may target an older macOS, since it only launches the helper.
     platforms: [.macOS("26.2")],
     products: [
         .library(name: "MLXImageCore", targets: ["MLXImageCore"]),
@@ -50,8 +49,8 @@ let package = Package(
                 .product(name: "MLXFast", package: "mlx-swift"),
             ]
         ),
-        // The Taltio worker (contract v2). Sources/ImageWorker/LocalWorkerContract.swift is a symlink to the app's own file, so
-        // host and helper compile the same contract. It serves Z-Image Turbo q4 and FLUX.2 Klein 4B q4.
+        // The worker (contract v2). Sources/ImageWorker/LocalWorkerContract.swift is the host/worker contract; a host app that compiles
+        // its own copy of that file must keep it identical. It serves Z-Image Turbo q4 and FLUX.2 Klein 4B q4.
         .target(name: "ImageWorker", dependencies: ["MLXImageCore", "ZImage", "FluxKlein", .product(name: "MLX", package: "mlx-swift")]),
         .executableTarget(name: "zimage-worker", dependencies: ["ImageWorker"]),
         .testTarget(name: "MLXImageCoreTests", dependencies: ["MLXImageCore"]),

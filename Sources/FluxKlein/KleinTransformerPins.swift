@@ -1,6 +1,6 @@
 import Foundation
 
-/// What slice 2 (transformer noise prediction, issue #219) pins about the snapshot and the production runtime. Slice 1's `KleinPins`
+/// What slice 2 (transformer noise prediction) pins about the snapshot and the production runtime. Slice 1's `KleinPins`
 /// is untouched; this adds the transformer files and the further audited MFLUX modules (`reference-code-audit.json`, 21 modules, 2 of
 /// them already pinned by slice 1).
 public enum KleinTransformerPins {
