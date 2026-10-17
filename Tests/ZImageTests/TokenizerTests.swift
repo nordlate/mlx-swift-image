@@ -72,7 +72,7 @@ final class RealTokenizerTests: XCTestCase {
     func testTokensMatchReferenceExport() throws {
         let model = try TestSupport.requireModel()
         let manifestURL = TestSupport.referenceDirectory.appendingPathComponent("manifest.json")
-        try XCTSkipUnless(FileManager.default.fileExists(atPath: manifestURL.path), "run scripts/run-parity.sh to export the reference")
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: manifestURL.path), "reference export not found at \(manifestURL.path); run Experiments/native-mlx-zimage/scripts/run-parity.sh or set ZIMAGE_REFERENCE_DIR")
         let manifest = try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as! [String: Any]
         let tok = try QwenTokenizer.load(modelDirectory: model)
         let cases = manifest["cases"] as! [[String: Any]]

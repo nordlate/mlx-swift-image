@@ -16,10 +16,14 @@ enum TestSupport {
         return url
     }
 
-    /// Reference artifacts written by scripts/run-parity.sh (ignored build output).
+    /// Reference artifacts written by the experiment's scripts/run-parity.sh (ignored build output); ZIMAGE_REFERENCE_DIR overrides the
+    /// default `<repo>/Experiments/native-mlx-zimage/build/reference`.
     static var referenceDirectory: URL {
-        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("build/reference")
+        if let path = ProcessInfo.processInfo.environment["ZIMAGE_REFERENCE_DIR"] {
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+        return URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("Experiments/native-mlx-zimage/build/reference", isDirectory: true)
     }
 
     /// Builds a safetensors file image: 8-byte little-endian header length, JSON header, data.
