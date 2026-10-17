@@ -1,5 +1,6 @@
 import Foundation
 import MLX
+import MLXImageCore
 
 // Slice 2 parity machinery: one independently runnable check per component (seeded latents, scheduler, q4 transformer
 // weights, patch/timestep embeddings, first block). Each reads only its own reference directory (written by its own

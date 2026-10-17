@@ -1,5 +1,6 @@
 import Foundation
 import MLX
+import MLXImageCore
 
 // Slice 4 checks: per-step latents of the real denoising loop, the VAE weights, isolated VAE decoding from reference
 // latents, and the complete pipeline's PNG. Same machinery as slice 2 and 3: each reads only its own reference directory.
@@ -158,8 +159,8 @@ public extension ComponentParity {
             let latents = try require(ref, "latents", c.id)
             let (refDecoded, refPixels) = try (require(ref, "decoded", c.id), require(ref, "pixels", c.id))
             let decoded = vae.decode(samplerLatents: latents)
-            let pixels = ZImageImage.pixels(decoded: decoded)
-            let pixelsFromReferenceDecoded = ZImageImage.pixels(decoded: refDecoded)
+            let pixels = ImageOutput.pixels(decoded: decoded)
+            let pixelsFromReferenceDecoded = ImageOutput.pixels(decoded: refDecoded)
             eval(decoded, pixels, pixelsFromReferenceDecoded)
             let (nativePixels, referencePixels) = (pixels.asArray(UInt8.self), refPixels.asArray(UInt8.self))
             let checks = [
@@ -208,8 +209,8 @@ public extension ComponentParity {
 
             let compiled = try generator.generate(request, mode: .compiled)
             let pngURL = outputDirectory.appendingPathComponent("\(c.id).png")
-            try ZImageImage.writePNG(pixels: compiled.pixels, to: pngURL)
-            let decodedPNG = try ZImageImage.readPNG(at: pngURL)
+            try ImageOutput.writePNG(pixels: compiled.pixels, to: pngURL)
+            let decodedPNG = try ImageOutput.readPNG(at: pngURL)
             let eager = try generator.generate(request, mode: .eager)
 
             let shape = [c.height, c.width, 3]
@@ -260,7 +261,7 @@ public extension ComponentParity {
     private static func pngStructure(native: URL, reference: URL, width: Int, height: Int) -> CheckResult {
         var result = CheckResult(name: "PNG structure vs MFLUX's PNG (encoding, never decisive)", kind: "diagnostic", decisive: false, passed: true, metrics: nil, detail: nil)
         do {
-            let (n, r) = try (ZImageImage.pngInfo(at: native), ZImageImage.pngInfo(at: reference))
+            let (n, r) = try (ImageOutput.pngInfo(at: native), ImageOutput.pngInfo(at: reference))
             let same = n.width == r.width && n.height == r.height && n.bitDepth == r.bitDepth && n.colorType == r.colorType
             result.detail = "native \(n.width)x\(n.height) depth \(n.bitDepth) colour type \(n.colorType), \(n.bytes) bytes; "
                 + "MFLUX \(r.width)x\(r.height) depth \(r.bitDepth) colour type \(r.colorType), \(r.bytes) bytes; "

@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 /// Collects the named intermediates of one eager forward pass.
 final class KleinTraceBox {
@@ -143,7 +143,7 @@ public enum KleinTransformerNative {
             schema: 1, side: "native", casesSHA256: casesSHA, casesDigest: KleinTransformerCases.digest(of: cases), budgetsSHA256: budgetsSHA,
             runtime: try runtimeInfo(), runtimeModules: nil, modelFilesBefore: before, modelFilesAfter: after, textWeights: textDigests,
             transformerWeights: transformerDigests,
-            textQuantizedModules: KleinTextWeights.quantizedMatrices().map {
+            textQuantizedModules: TextEncoderLayout.quantizedMatrices().map {
                 KleinQuantizedModule(name: $0.name, bits: TextEncoderLayout.bits, groupSize: TextEncoderLayout.groupSize, mode: "affine")
             },
             transformerQuantizedModules: KleinTransformerWeights.quantizedModules(), cases: entries, controlTensors: info(controls))

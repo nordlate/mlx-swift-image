@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public struct KleinTensorResult: Codable, Sendable {
     public var name: String
@@ -307,7 +307,7 @@ public enum KleinCompare {
         var quant: [String] = []
         let sortedRef = reference.quantizedModules.sorted { $0.name < $1.name }, sortedNative = native.quantizedModules.sorted { $0.name < $1.name }
         if sortedRef != sortedNative { quant.append("quantized modules differ between MFLUX and native") }
-        let expectedModules = Set(KleinTextWeights.quantizedMatrices().map { $0.name })
+        let expectedModules = Set(TextEncoderLayout.quantizedMatrices().map { $0.name })
         if Set(sortedRef.map(\.name)) != expectedModules || sortedRef.count != expectedModules.count {
             quant.append("reference quantized modules are not the architecture's \(expectedModules.count) matrices (\(sortedRef.count) reported)")
         }

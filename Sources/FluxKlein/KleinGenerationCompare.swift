@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public struct KleinGenerationPixelResult: Codable, Sendable {
     public var name: String
@@ -149,7 +149,7 @@ public enum KleinGenerationCompare {
                     }
                 } catch { failures.append("\(side): tensor artifact missing/unreadable: \(error)"); complete = false }
                 do {
-                    let url = dir.appendingPathComponent(id+".png"), info = try ZImageImage.pngInfo(at: url), image = try ZImageImage.readPNG(at: url)
+                    let url = dir.appendingPathComponent(id+".png"), info = try ImageOutput.pngInfo(at: url), image = try ImageOutput.readPNG(at: url)
                     hashes[side+"/"+id+".png"] = info.sha256
                     guard info.width == w, info.height == h, info.bitDepth == 8, info.colorType == 2, image.width == w, image.height == h else { throw KleinTransformerError.invalidInput("PNG must be actual-size 8-bit RGB without alpha") }
                     pngs[side] = image.bytes

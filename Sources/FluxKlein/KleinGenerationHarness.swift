@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public struct KleinGenerationEntry: Codable, Equatable, Sendable {
     public var id: String
@@ -49,7 +49,7 @@ public enum KleinGenerationNative {
     }
     static func prefixed(_ d: [String: KleinTensorDigest],_ prefix: String) -> [String: KleinTensorDigest] { Dictionary(uniqueKeysWithValues: d.map { (prefix + "." + $0.key,$0.value) }) }
     static func quantized(isolated: Bool) -> [KleinQuantizedModule] {
-        let text = KleinTextWeights.quantizedMatrices().map { KleinQuantizedModule(name: $0.name,bits: 4,groupSize: 64,mode: "affine") }
+        let text = TextEncoderLayout.quantizedMatrices().map { KleinQuantizedModule(name: $0.name,bits: 4,groupSize: 64,mode: "affine") }
         return (isolated ? [] : [("text_encoder",text),("transformer",KleinTransformerWeights.quantizedModules())]).flatMap { prefix,modules in
             modules.map { KleinQuantizedModule(name: prefix + "." + $0.name,bits: $0.bits,groupSize: $0.groupSize,mode: $0.mode) }
         } + KleinVAEWeights.quantizedModules().map { KleinQuantizedModule(name: "vae." + $0.name,bits: $0.bits,groupSize: $0.groupSize,mode: $0.mode) }
@@ -60,7 +60,7 @@ public enum KleinGenerationNative {
         guard let pixels = arrays["pixels"] else { throw KleinTransformerError.invalidInput("missing pixels") }
         let png = out.appendingPathComponent(id + ".png")
         try KleinGenerationPaths.requireNew(png)
-        try ZImageImage.encodePNG(pixels: pixels).write(to: png,options: .withoutOverwriting)
+        try ImageOutput.encodePNG(pixels: pixels).write(to: png,options: .withoutOverwriting)
         return KleinGenerationEntry(id: id,width: width,height: height,seed: seed,steps: steps,prompt: prompt,numValid: numValid,untruncatedCount: untruncatedCount,tensors: KleinTransformerNative.info(arrays))
     }
     public static func run(modelDirectory: URL,casesJSON: URL,budgetsJSON: URL,outputDirectory: URL,log: (String) -> Void = { _ in }) throws {

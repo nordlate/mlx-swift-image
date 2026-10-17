@@ -1,5 +1,6 @@
 import Foundation
 import MLX
+import MLXImageCore
 
 /// One text-to-image job for Z-Image Turbo.
 public struct GenerationRequest: Equatable, Sendable {
@@ -124,7 +125,7 @@ public final class ZImageGenerator {
         let caption = try encodePrompt(request.prompt)
         let latents = try denoiser.denoise(request: request, captionFeatures: caption, mode: mode, onStep: onStep)
         let decoded = vae.decode(samplerLatents: latents)
-        let pixels = ZImageImage.pixels(decoded: decoded)
+        let pixels = ImageOutput.pixels(decoded: decoded)
         eval(decoded, pixels)
         return GeneratedImage(latents: latents, decoded: decoded, pixels: pixels)
     }

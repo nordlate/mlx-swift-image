@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public struct KleinVAEWeights {
     public let tensors: [String: MLXArray]

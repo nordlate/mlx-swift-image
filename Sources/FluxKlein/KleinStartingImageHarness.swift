@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public struct KleinStartingImageManifest: Codable, Sendable {
     public var payload: KleinGenerationManifest
@@ -48,7 +48,7 @@ public enum KleinStartingImageNative {
     static func saveCase(_ c: KleinStartingImageCase,arrays: [String: MLXArray],out: URL,summary: (Int,Int) = (0,0)) throws -> KleinGenerationEntry {
         eval(Array(arrays.values))
         try save(arrays: arrays,url: out.appendingPathComponent(c.id+".safetensors"))
-        if let pixels = arrays["pixels"] { try ZImageImage.encodePNG(pixels: pixels).write(to: out.appendingPathComponent(c.id+".png"),options: .withoutOverwriting) }
+        if let pixels = arrays["pixels"] { try ImageOutput.encodePNG(pixels: pixels).write(to: out.appendingPathComponent(c.id+".png"),options: .withoutOverwriting) }
         return .init(id: c.id,width: c.width,height: c.height,seed: c.seed,steps: c.steps,prompt: c.prompt,numValid: summary.0,untruncatedCount: summary.1,tensors: KleinTransformerNative.info(arrays))
     }
     public static func run(modelDirectory: URL,casesJSON: URL,budgetsJSON: URL,fixtures: URL,frozenJSON: URL,

@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public enum KleinStartingImageCompare {
     static func rule(_ name: String,isolated: Bool) -> KleinTransformerCompare.Rule {
@@ -139,7 +139,7 @@ public enum KleinStartingImageCompare {
                                KleinHashing.sha256(of: Data(KleinCompare.bytes(tensor))) == digest.sha256 { } else { failures.append("\(side): captured BN statistics differ from loaded parameter bytes") }
                         }
                         if !c.tiny {
-                            let file = dir.appendingPathComponent(c.id+".png"), info = try ZImageImage.pngInfo(at: file), png = try ZImageImage.readPNG(at: file)
+                            let file = dir.appendingPathComponent(c.id+".png"), info = try ImageOutput.pngInfo(at: file), png = try ImageOutput.readPNG(at: file)
                             hashes[side+"/"+c.id+".png"] = info.sha256
                             if info.width != c.width || info.height != c.height || info.bitDepth != 8 || info.colorType != 2 || a["pixels"]?.dtype != .uint8 || png.bytes != a["pixels"]?.asArray(UInt8.self) { failures.append("\(side): PNG readback differs from own pixel payload") }
                         }

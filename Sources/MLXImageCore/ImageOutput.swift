@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 /// mflux's decoded-tensor to image conversion and the PNG the production pipeline produces: an 8-bit RGB image (PIL mode
 /// `RGB`, three interleaved channels, no alpha).
-public enum ZImageImage {
+public enum ImageOutput {
     /// `ImageUtil._denormalize`, `_to_numpy` and `_numpy_to_pil`'s array step for a decoded `[1, 3, H, W]` tensor:
     /// `clip(x / 2 + 0.5, 0, 1)` in the decoder's dtype, to NHWC float32, `round(x * 255)` (half to even, as numpy rounds)
     /// to uint8. Returns `[H, W, 3]`.

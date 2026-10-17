@@ -2,7 +2,7 @@ import Foundation
 import MLX
 import XCTest
 @testable import FluxKlein
-@testable import ZImage
+@testable import MLXImageCore
 
 final class KleinVAEValidationTests: XCTestCase {
     let metadata = ["quantization_level":"4","mflux_version":"0.19.0"]

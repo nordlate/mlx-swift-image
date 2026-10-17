@@ -1,5 +1,6 @@
 import Foundation
 import MLX
+import MLXImageCore
 
 /// What `inspect` reports about a VAE snapshot after validation; no tensor data is needed to produce it.
 public struct VAEInspection: Codable, Equatable, Sendable {

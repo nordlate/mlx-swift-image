@@ -1,6 +1,7 @@
 import MLX
 import MLXFast
 import XCTest
+import MLXImageCore
 @testable import ZImage
 
 final class TransformerLayoutTests: XCTestCase {

@@ -13,6 +13,7 @@ let package = Package(
     // The helper and its Metal target are validated against 26.2; the Taltio app stays at 15.3.
     platforms: [.macOS("26.2")],
     products: [
+        .library(name: "MLXImageCore", targets: ["MLXImageCore"]),
         .library(name: "ZImage", targets: ["ZImage"]),
         .library(name: "FluxKlein", targets: ["FluxKlein"]),
         .library(name: "ImageWorker", targets: ["ImageWorker"]),
@@ -22,19 +23,28 @@ let package = Package(
         .package(url: "https://github.com/ml-explore/mlx-swift", revision: mlxSwiftRevision),
     ],
     targets: [
+        // What Z-Image and Klein share: the Qwen3 q4 text-encoder layout and its identical ops, the Qwen tokenizer, safetensors headers,
+        // parity metrics and PNG/JPEG output. Numerics that differ between the two models stay in their own targets.
+        .target(
+            name: "MLXImageCore",
+            dependencies: [
+                .product(name: "MLX", package: "mlx-swift"),
+            ]
+        ),
         .target(
             name: "ZImage",
             dependencies: [
+                "MLXImageCore",
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
                 .product(name: "MLXFast", package: "mlx-swift"),
             ]
         ),
-        // Klein text encoding reuses ZImage's tokenizer, safetensors/layout loader and metrics; nothing there changes behavior.
+        // Klein does not depend on ZImage: tokenizer, safetensors/layout loader, metrics and image output come from MLXImageCore.
         .target(
             name: "FluxKlein",
             dependencies: [
-                "ZImage",
+                "MLXImageCore",
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
                 .product(name: "MLXFast", package: "mlx-swift"),
@@ -42,10 +52,11 @@ let package = Package(
         ),
         // The Taltio worker (contract v2). Sources/ImageWorker/LocalWorkerContract.swift is a symlink to the app's own file, so
         // host and helper compile the same contract. It serves Z-Image Turbo q4 and FLUX.2 Klein 4B q4.
-        .target(name: "ImageWorker", dependencies: ["ZImage", "FluxKlein", .product(name: "MLX", package: "mlx-swift")]),
+        .target(name: "ImageWorker", dependencies: ["MLXImageCore", "ZImage", "FluxKlein", .product(name: "MLX", package: "mlx-swift")]),
         .executableTarget(name: "zimage-worker", dependencies: ["ImageWorker"]),
-        .testTarget(name: "FluxKleinTests", dependencies: ["FluxKlein", "ZImage"]),
-        .testTarget(name: "ZImageTests", dependencies: ["ZImage"]),
+        .testTarget(name: "MLXImageCoreTests", dependencies: ["MLXImageCore"]),
+        .testTarget(name: "FluxKleinTests", dependencies: ["FluxKlein", "MLXImageCore"]),
+        .testTarget(name: "ZImageTests", dependencies: ["ZImage", "MLXImageCore"]),
         .testTarget(name: "ImageWorkerTests", dependencies: ["ImageWorker"]),
     ],
     swiftLanguageModes: [.v5]

@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 /// Klein 4B's text encoder is a Qwen3 4B decoder with exactly the architecture and stored layout of Z-Image Turbo's
 /// (`TextEncoderLayout`: 905 tensors, q4 group size 64, bf16 scales/biases/norms, f32 `rotary_emb.inv_freq`). The shared layout is
@@ -10,22 +10,6 @@ public struct KleinTextWeights {
     public let tensors: [String: MLXArray]
 
     public func tensor(_ name: String) -> MLXArray { tensors[name]! }
-
-    /// The quantized matrices of the architecture: (name, out features, in features).
-    static func quantizedMatrices() -> [(name: String, out: Int, input: Int)] {
-        let hidden = TextEncoderLayout.hiddenSize, qDim = TextEncoderLayout.attentionHeads * TextEncoderLayout.headDim
-        let kvDim = TextEncoderLayout.keyValueHeads * TextEncoderLayout.headDim, inter = TextEncoderLayout.intermediateSize
-        var result: [(name: String, out: Int, input: Int)] = [("embed_tokens", TextEncoderLayout.vocabSize, hidden)]
-        for layer in 0..<TextEncoderLayout.layerCount {
-            let p = "layers.\(layer)."
-            result += [
-                (p + "self_attn.q_proj", qDim, hidden), (p + "self_attn.k_proj", kvDim, hidden), (p + "self_attn.v_proj", kvDim, hidden),
-                (p + "self_attn.o_proj", hidden, qDim), (p + "mlp.gate_proj", inter, hidden), (p + "mlp.up_proj", inter, hidden),
-                (p + "mlp.down_proj", hidden, inter),
-            ]
-        }
-        return result
-    }
 
     /// Pure validation of an index and its shard headers; no tensor data is touched.
     /// Checks names (no missing, no unexpected), per-tensor dtype and shape, shard assignment, stored metadata and the bits/group size
@@ -67,7 +51,7 @@ public struct KleinTextWeights {
         guard seen.count == expected.count else { throw fail("shards hold \(seen.count) tensors, expected \(expected.count)") }
         // Bits and group size as the applier infers them, for every quantized matrix. Derived from the stored header entries
         // (the shapes just validated), so a snapshot saved at another precision cannot slip through on the layout constants alone.
-        for matrix in quantizedMatrices() {
+        for matrix in TextEncoderLayout.quantizedMatrices() {
             let packed = shardHeaders.values.compactMap { $0.entries[matrix.name + ".weight"] }.first!.shape.last!
             let scales = shardHeaders.values.compactMap { $0.entries[matrix.name + ".scales"] }.first!.shape.last!
             let bits = Double(packed * 32) / Double(matrix.input), group = Double(matrix.input) / Double(scales)

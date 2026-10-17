@@ -2,7 +2,7 @@ import Foundation
 import MLX
 import XCTest
 @testable import FluxKlein
-@testable import ZImage
+@testable import MLXImageCore
 
 final class KleinTensorComparisonTests: XCTestCase {
     private let limit = KleinBudgets.tensors["hs9"]!
@@ -273,7 +273,6 @@ final class KleinEncoderPieceTests: XCTestCase {
     func testRotateHalfAndPositionEmbeddings() {
         Device.withDefaultDevice(.cpu) {
             let x = MLXArray([1, 2, 3, 4] as [Float]).reshaped(1, 1, 1, 4)
-            XCTAssertEqual(KleinTextEncoder.rotateHalf(x).asArray(Float.self), [-3, -4, 1, 2])
             let invFreq = MLXArray((0..<64).map { Float(1) / Float(Foundation.pow(1_000_000.0, Double($0) / 64)) })
             let encoder = KleinTextEncoder(weights: KleinTextWeights(tensors: ["rotary_emb.inv_freq": invFreq]))
             let (cos, sin) = encoder.positionEmbeddings(batch: 2, seqLen: 3, dtype: .bfloat16)

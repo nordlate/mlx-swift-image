@@ -1,6 +1,7 @@
 import CryptoKit
 import Foundation
 import MLX
+import MLXImageCore
 
 /// What `inspect` reports about a transformer snapshot after validation; no tensor data is needed to produce it.
 public struct TransformerInspection: Codable, Equatable, Sendable {

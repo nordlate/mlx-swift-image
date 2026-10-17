@@ -1,7 +1,8 @@
 import Foundation
 
 /// The architecture of Z-Image Turbo's text encoder (a Qwen3 4B decoder) as mflux 0.18 defines it, and the exact
-/// tensor names/dtypes/shapes the existing q4 snapshot must contain. Constants come from mflux's `TextEncoder`
+/// tensor names/dtypes/shapes the existing q4 snapshot must contain. Z-Image Turbo and FLUX.2 Klein 4B share this architecture and
+/// stored layout; the numerics that differ between them (norm eps, dtype flow) live with each model's own encoder. Constants come from mflux's `TextEncoder`
 /// defaults and were checked against the snapshot headers; the loader refuses anything that differs.
 public enum TextEncoderLayout {
     public static let vocabSize = 151_936
@@ -12,20 +13,17 @@ public enum TextEncoderLayout {
     public static let intermediateSize = 9728
     public static let headDim = 128
     public static let ropeTheta: Float = 1_000_000
-    public static let layerNormEps: Float = 1e-6
-    /// mflux builds q_norm/k_norm with `nn.RMSNorm(head_dim)`, i.e. MLX's default eps, not the layer eps.
-    public static let qkNormEps: Float = 1e-5
     public static let bits = 4
     public static let groupSize = 64
 
     /// A 4-bit affine-quantized matrix `[out, in]`: packed U32 `[out, in*bits/32]`, BF16 scales/biases `[out, in/group]`.
-    struct Quantized {
-        let name: String
-        let out: Int
-        let input: Int
+    package struct Quantized {
+        package let name: String
+        package let out: Int
+        package let input: Int
     }
 
-    static func layerMatrices(_ layer: Int) -> [Quantized] {
+    package static func layerMatrices(_ layer: Int) -> [Quantized] {
         let p = "layers.\(layer)."
         let qDim = attentionHeads * headDim
         let kvDim = keyValueHeads * headDim
@@ -38,6 +36,11 @@ public enum TextEncoderLayout {
             Quantized(name: p + "mlp.up_proj", out: intermediateSize, input: hiddenSize),
             Quantized(name: p + "mlp.down_proj", out: hiddenSize, input: intermediateSize),
         ]
+    }
+
+    /// Every q4 matrix of the architecture, embedding table first, then the seven matrices of each layer in order.
+    package static func quantizedMatrices() -> [Quantized] {
+        [Quantized(name: "embed_tokens", out: vocabSize, input: hiddenSize)] + (0..<layerCount).flatMap(layerMatrices)
     }
 
     /// Every tensor the snapshot must hold, with its stored dtype and shape.

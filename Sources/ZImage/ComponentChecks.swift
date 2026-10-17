@@ -1,5 +1,6 @@
 import Foundation
 import MLX
+import MLXImageCore
 
 /// The component checks (slice 2: latent, scheduler, weights, embeddings, first block; slice 3: middle and last block, final projection,
 /// full transformer output). Each is independently runnable and returns a report whose `passed` is the verdict.

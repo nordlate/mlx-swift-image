@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 @testable import FluxKlein
-@testable import ZImage
+@testable import MLXImageCore
 
 final class KleinTransformerWeightValidationTests: XCTestCase {
     private struct Parts {

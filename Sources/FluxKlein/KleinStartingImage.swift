@@ -1,7 +1,7 @@
 import Foundation
 import ImageIO
 import MLX
-import ZImage
+import MLXImageCore
 
 /// Only the already prepared, job-owned RGB PNG from StartingImagePreparer is accepted. No raw-photo preprocessing.
 public struct KleinPreparedStartingImage {
@@ -12,7 +12,7 @@ public struct KleinPreparedStartingImage {
     public static func load(_ url: URL, width: Int, height: Int) throws -> Self {
         guard url.isFileURL else { throw KleinTransformerError.invalidInput("prepared input must be a local PNG file") }
         _ = try KleinLatent.grid(height: height,width: width)
-        let data = try Data(contentsOf: url), info = try ZImageImage.pngInfo(at: url)
+        let data = try Data(contentsOf: url), info = try ImageOutput.pngInfo(at: url)
         // The bytes validated below (first in-memory read) must be the ones the pinned file digest names; the digest is checked
         // again after the ImageIO decode (a later read of the file), so a change between the reads cannot pass either one.
         guard KleinHashing.sha256(of: data) == info.sha256 else { throw KleinTransformerError.invalidInput("input changed during read") }
@@ -41,7 +41,7 @@ public struct KleinPreparedStartingImage {
         let properties = CGImageSourceCopyPropertiesAtIndex(source,0,nil) as? [CFString: Any]
         let orientation = (properties?[kCGImagePropertyOrientation] as? NSNumber)?.intValue ?? 1
         guard orientation == 1 else { throw KleinTransformerError.invalidInput("unprepared EXIF orientation") }
-        let image = try ZImageImage.readPNG(at: url)
+        let image = try ImageOutput.readPNG(at: url)
         guard image.width == width, image.height == height, image.bytes.count == width*height*3,
               try KleinHashing.sha256(of: url) == info.sha256 else { throw KleinTransformerError.invalidInput("input changed during read") }
         return Self(width: width,height: height,rgb: image.bytes,fileSHA256: info.sha256)

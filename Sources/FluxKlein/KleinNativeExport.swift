@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 /// The native side of the slice-1 check. Runs on its own: it never reads reference output, only the read-only model and the frozen
 /// cases file, and writes `<id>.safetensors` per case plus `manifest.json` into a new output directory.
@@ -59,7 +59,7 @@ public enum KleinNativeExport {
 
         let after = try KleinHashing.verifyModelFiles(modelDirectory: modelDirectory)
         // What the native encoder constructs: every quantized matrix is applied with the layout's bits, group size and affine mode.
-        let quantized = KleinTextWeights.quantizedMatrices().map {
+        let quantized = TextEncoderLayout.quantizedMatrices().map {
             KleinQuantizedModule(name: $0.name, bits: TextEncoderLayout.bits, groupSize: TextEncoderLayout.groupSize, mode: "affine")
         }
         let env = ProcessInfo.processInfo

@@ -1,5 +1,5 @@
 import Foundation
-import ZImage
+import MLXImageCore
 
 public struct KleinGenerationCase: Equatable, Sendable {
     public let id: String, category: String, prompt: String

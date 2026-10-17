@@ -3,7 +3,7 @@ import Foundation
 import MLX
 import XCTest
 @testable import FluxKlein
-@testable import ZImage
+@testable import MLXImageCore
 
 private enum GenerationTestFiles {
     static var dir: URL { KleinTestSupport.kleinDirectory.appendingPathComponent("generation") }
@@ -56,11 +56,11 @@ final class KleinGenerationPixelTests: XCTestCase {
             let path = out.appendingPathComponent("image.png")
             let output = KleinGenerationOutput(latents: decoded,packed: decoded,decoded: decoded,pixels: pixels)
             try output.writePNG(to: path)
-            XCTAssertEqual(try ZImageImage.readPNG(at: path).bytes,pixels.asArray(UInt8.self))
-            let info = try ZImageImage.pngInfo(at: path)
+            XCTAssertEqual(try ImageOutput.readPNG(at: path).bytes,pixels.asArray(UInt8.self))
+            let info = try ImageOutput.pngInfo(at: path)
             XCTAssertEqual(info.colorType,2); XCTAssertEqual(info.bitDepth,8); XCTAssertEqual(info.width,2)
             XCTAssertThrowsError(try output.writePNG(to: path))
-            XCTAssertThrowsError(try ZImageImage.readPNG(at: out.appendingPathComponent("missing.png")))
+            XCTAssertThrowsError(try ImageOutput.readPNG(at: out.appendingPathComponent("missing.png")))
         }
     }
     func testWrongShapeDTypeAndNonFiniteDecodedAreRejectedBeforePixels() throws {

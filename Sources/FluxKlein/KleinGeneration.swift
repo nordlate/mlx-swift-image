@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public struct KleinGenerationRequest: Sendable {
     public let prompt: String
@@ -28,7 +28,7 @@ public struct KleinGenerationOutput {
     public let latents: MLXArray, packed: MLXArray, decoded: MLXArray, pixels: MLXArray
     public func writePNG(to url: URL) throws {
         try KleinGenerationPaths.requireNew(url)
-        try ZImageImage.encodePNG(pixels: pixels).write(to: url,options: .withoutOverwriting)
+        try ImageOutput.encodePNG(pixels: pixels).write(to: url,options: .withoutOverwriting)
     }
 }
 /// One reusable compiled prediction closure per generator. No VAE encoder, previews, worker integration or VAE compilation.
@@ -87,7 +87,7 @@ public enum KleinGenerationPixels {
     public static func convert(_ decoded: MLXArray, width: Int, height: Int) throws -> MLXArray {
         guard width > 0, height > 0, decoded.shape == [1,3,height,width], decoded.dtype == .bfloat16,
               KleinCompare.floats(decoded).allSatisfy(\.isFinite) else { throw KleinTransformerError.invalidInput("decoded tensor shape/dtype/nonfinite") }
-        return ZImageImage.pixels(decoded: decoded)
+        return ImageOutput.pixels(decoded: decoded)
     }
     public static func budget(native: [UInt8], reference: [UInt8]) -> (max: Int, mean: Double, passed: Bool) {
         guard native.count == reference.count, !native.isEmpty else { return (256, .infinity, false) }

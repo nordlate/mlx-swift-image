@@ -1,6 +1,6 @@
 import Foundation
 import MLX
-import ZImage
+import MLXImageCore
 
 public struct KleinDiagnostic: Codable, Sendable {
     public var name: String
@@ -279,7 +279,7 @@ public enum KleinTransformerCompare {
             }
             if Set(sorted.map { $0.1 }.map { $0.map { "\($0.name)/\($0.bits)/\($0.groupSize)/\($0.mode)" } }).count > 1 { quant.append("\(label) quantized modules differ between \(sides.map(\.0))") }
         }
-        compareQuant("text", expected: Set(KleinTextWeights.quantizedMatrices().map(\.name)), [("reference", reference.textQuantizedModules), ("native", native.textQuantizedModules)])
+        compareQuant("text", expected: Set(TextEncoderLayout.quantizedMatrices().map(\.name)), [("reference", reference.textQuantizedModules), ("native", native.textQuantizedModules)])
         compareQuant("transformer", expected: Set(KleinTransformerLayout.matrices().map(\.name)),
                      [("reference", reference.transformerQuantizedModules), ("native", native.transformerQuantizedModules), ("isolated", isolated.transformerQuantizedModules)])
         checks.append(KleinCompare.check("quantization", quant))

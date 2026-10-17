@@ -2,6 +2,14 @@ import Foundation
 import MLX
 import MLXFast
 import MLXNN
+import MLXImageCore
+
+extension TextEncoderLayout {
+    /// Z-Image's layer norms use 1e-6; Klein's encoder keeps its own constant.
+    static let layerNormEps: Float = 1e-6
+    /// mflux builds q_norm/k_norm with `nn.RMSNorm(head_dim)`, i.e. MLX's default eps, not the layer eps.
+    static let qkNormEps: Float = 1e-5
+}
 
 /// Port of mflux's Z-Image `TextEncoder` (Qwen3 4B, q4) and `PromptEncoder.encode_prompt`.
 ///
@@ -23,23 +31,11 @@ public struct TextEncoder {
     static let evaluatedLayers = TextEncoderLayout.layerCount - 1
 
     private func linear(_ x: MLXArray, _ name: String) -> MLXArray {
-        quantizedMM(
-            x, weights.tensor(name + ".weight"), scales: weights.tensor(name + ".scales"),
-            biases: weights.tensor(name + ".biases"), transpose: true,
-            groupSize: TextEncoderLayout.groupSize, bits: TextEncoderLayout.bits)
+        QwenOps.linear(x, name, tensor: weights.tensor)
     }
 
     private func embed(_ ids: MLXArray) -> MLXArray {
-        let name = "embed_tokens"
-        return dequantized(
-            weights.tensor(name + ".weight")[ids], scales: weights.tensor(name + ".scales")[ids],
-            biases: weights.tensor(name + ".biases")[ids],
-            groupSize: TextEncoderLayout.groupSize, bits: TextEncoderLayout.bits)
-    }
-
-    private func rotateHalf(_ x: MLXArray) -> MLXArray {
-        let half = x.dim(-1) / 2
-        return concatenated([-x[.ellipsis, half...], x[.ellipsis, ..<half]], axis: -1)
+        QwenOps.embed(ids, tensor: weights.tensor)
     }
 
     /// Additive float32 mask `[B, 1, S, S]`: causal, plus -inf on padded key positions.
@@ -71,8 +67,8 @@ public struct TextEncoder {
         k = MLXFast.rmsNorm(k, weight: weights.tensor(p + "k_norm.weight"), eps: TextEncoderLayout.qkNormEps)
         let c = expandedDimensions(cos, axis: 2), s = expandedDimensions(sin, axis: 2)
         if layer == 0 { trace?("l0.q_norm", q) }
-        q = q * c + rotateHalf(q) * s
-        k = k * c + rotateHalf(k) * s
+        q = q * c + QwenOps.rotateHalf(q) * s
+        k = k * c + QwenOps.rotateHalf(k) * s
         if layer == 0 { trace?("l0.q_rope", q) }
         let groups = heads / kvHeads
         k = repeated(k, count: groups, axis: 2)

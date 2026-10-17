@@ -1,6 +1,6 @@
 import XCTest
 @testable import FluxKlein
-@testable import ZImage
+@testable import MLXImageCore
 
 enum KleinTestSupport {
     static var modelDirectory: URL {
@@ -47,7 +47,7 @@ final class KleinWeightValidationTests: XCTestCase {
         let parts = KleinTestSupport.validParts()
         XCTAssertEqual(parts.weightMap.count, 905)
         XCTAssertNoThrow(try validate(parts))
-        XCTAssertEqual(KleinTextWeights.quantizedMatrices().count, 1 + 36 * 7)
+        XCTAssertEqual(TextEncoderLayout.quantizedMatrices().count, 1 + 36 * 7)
     }
 
     func testRejectsWrongQuantizationOrVersionMetadata() {

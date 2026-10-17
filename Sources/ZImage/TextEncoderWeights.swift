@@ -1,5 +1,6 @@
 import Foundation
 import MLX
+import MLXImageCore
 
 public enum WeightLoadError: Error, CustomStringConvertible {
     case invalid(String)

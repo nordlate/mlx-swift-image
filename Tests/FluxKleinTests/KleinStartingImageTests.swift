@@ -2,6 +2,7 @@ import Darwin
 import Foundation
 import MLX
 import XCTest
+import MLXImageCore
 @testable import FluxKlein
 import ZImage
 
@@ -18,7 +19,7 @@ private enum StartingFiles {
     }
     static func image(_ dir: URL,width: Int = 16,height: Int = 16) throws -> URL {
         let bytes = (0..<width*height*3).map { UInt8($0%256) }
-        let png = try ZImageImage.encodePNG(pixels: MLXArray(bytes).reshaped(height,width,3))
+        let png = try ImageOutput.encodePNG(pixels: MLXArray(bytes).reshaped(height,width,3))
         let url = dir.appendingPathComponent(UUID().uuidString+".png")
         try png.write(to: url,options: .withoutOverwriting)
         return url

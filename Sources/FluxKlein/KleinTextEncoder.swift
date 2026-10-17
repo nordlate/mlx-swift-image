@@ -1,8 +1,8 @@
 import Foundation
 import MLX
 import MLXFast
+import MLXImageCore
 import MLXNN
-import ZImage
 
 /// Port of mflux's `Qwen3TextEncoder` (`flux2/model/flux2_text_encoder/qwen3_text_encoder.py`) as Klein 4B runs it, op for op.
 ///
@@ -46,16 +46,11 @@ public struct KleinTextEncoder {
     }
 
     private func linear(_ x: MLXArray, _ name: String) -> MLXArray {
-        quantizedMM(
-            x, weights.tensor(name + ".weight"), scales: weights.tensor(name + ".scales"), biases: weights.tensor(name + ".biases"),
-            transpose: true, groupSize: TextEncoderLayout.groupSize, bits: TextEncoderLayout.bits)
+        QwenOps.linear(x, name, tensor: weights.tensor)
     }
 
     private func embed(_ ids: MLXArray) -> MLXArray {
-        let name = "embed_tokens"
-        return dequantized(
-            weights.tensor(name + ".weight")[ids], scales: weights.tensor(name + ".scales")[ids],
-            biases: weights.tensor(name + ".biases")[ids], groupSize: TextEncoderLayout.groupSize, bits: TextEncoderLayout.bits)
+        QwenOps.embed(ids, tensor: weights.tensor)
     }
 
     /// `Qwen3VLRMSNorm.__call__`.
@@ -64,11 +59,6 @@ public struct KleinTextEncoder {
         let variance = mean(square(f), axis: -1, keepDims: true)
         let normalized = f * rsqrt(variance + eps)
         return (weight.asType(.float32) * normalized).asType(x.dtype)
-    }
-
-    static func rotateHalf(_ x: MLXArray) -> MLXArray {
-        let half = x.dim(-1) / 2
-        return concatenated([-x[.ellipsis, half...], x[.ellipsis, ..<half]], axis: -1)
     }
 
     /// `Qwen3TextEncoder.__call__`'s additive mask `[B, 1, S, S]` in `dtype`: causal (-inf above the diagonal) plus -inf on padded keys.
@@ -115,8 +105,8 @@ public struct KleinTextEncoder {
         k = k.transposed(0, 2, 1, 3)
         v = v.transposed(0, 2, 1, 3)
         let c = expandedDimensions(cos, axis: 1), s = expandedDimensions(sin, axis: 1)
-        q = q * c + Self.rotateHalf(q) * s
-        k = k * c + Self.rotateHalf(k) * s
+        q = q * c + QwenOps.rotateHalf(q) * s
+        k = k * c + QwenOps.rotateHalf(k) * s
         let groups = heads / kvHeads
         func repeatKV(_ x: MLXArray) -> MLXArray {
             let (b, n, len, d) = (x.dim(0), x.dim(1), x.dim(2), x.dim(3))
