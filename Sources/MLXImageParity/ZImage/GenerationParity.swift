@@ -273,7 +273,7 @@ public extension ComponentParity {
         return result
     }
 
-    private static func logLine(_ c: ComponentCaseResult, pixels: Bool) -> String {
+    static func logLine(_ c: ComponentCaseResult, pixels: Bool) -> String {
         let decisive = c.checks.filter(\.decisive)
         let maxAbs = decisive.compactMap { $0.pixels?.maxAbsDiff }.max()
         let worst = decisive.compactMap { $0.metrics?.relativeL2 }.max()
