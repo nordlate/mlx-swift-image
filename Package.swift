@@ -1,5 +1,5 @@
 // swift-tools-version: 6.0
-// MLXSwiftImage: native MLX image generation for Apple silicon (Z-Image Turbo q4, FLUX.2 Klein 4B q4). Unofficial; not affiliated with ml-explore.
+// MLXSwiftImage: native MLX image generation for Apple silicon (Z-Image Turbo and Base q4, FLUX.2 Klein 4B q4). Unofficial; not affiliated with ml-explore.
 import PackageDescription
 
 // Pinned by commit, not by version string. A consumer that builds for release should also check the checked-out gitlinks of

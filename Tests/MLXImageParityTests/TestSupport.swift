@@ -22,4 +22,30 @@ enum TestSupport {
         guard let path = ProcessInfo.processInfo.environment["ZIMAGE_REFERENCE_DIR"], !path.isEmpty else { return nil }
         return URL(fileURLWithPath: path, isDirectory: true)
     }
+
+    /// The read-only Z-Image Base q4 snapshot (`ZIMAGE_BASE_MODEL_DIR`); nil when it is not set.
+    static var baseModelDirectory: URL? {
+        guard let path = ProcessInfo.processInfo.environment["ZIMAGE_BASE_MODEL_DIR"], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    static func requireBaseModel() throws -> URL {
+        guard let url = baseModelDirectory else { throw XCTSkip("ZIMAGE_BASE_MODEL_DIR is not set; point it at a Z-Image Base q4 snapshot") }
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: url.appendingPathComponent("text_encoder/model.safetensors.index.json").path),
+                          "ZIMAGE_BASE_MODEL_DIR: q4 snapshot not found at \(url.path)")
+        return url
+    }
+
+    /// The Python/MFLUX Z-Image Base reference export (`ZIMAGE_BASE_REFERENCE_DIR`); nil when it is not set.
+    static var baseReferenceDirectory: URL? {
+        guard let path = ProcessInfo.processInfo.environment["ZIMAGE_BASE_REFERENCE_DIR"], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
+
+    static func requireBaseReference() throws -> URL {
+        guard let url = baseReferenceDirectory else { throw XCTSkip("ZIMAGE_BASE_REFERENCE_DIR is not set; point it at a Z-Image Base MFLUX reference export") }
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: url.appendingPathComponent("manifest.json").path),
+                          "ZIMAGE_BASE_REFERENCE_DIR: reference export not found at \(url.path)")
+        return url
+    }
 }
