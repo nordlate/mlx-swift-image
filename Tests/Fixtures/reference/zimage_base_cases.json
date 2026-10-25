@@ -1,0 +1,27 @@
+{
+  "_comment": "Case lists for the Z-Image Base parity against MFLUX 0.20. Read by the Python exporter and the native checker. Sigma cases are exact; step cases are guided free-running loops checkpointed every step; pixel cases are complete jobs (guidance 4.0, the model card's 3.0-5.0).",
+  "sigma_cases": [
+    {"id": "s1-512", "steps": 1, "width": 512, "height": 512},
+    {"id": "s4-512", "steps": 4, "width": 512, "height": 512},
+    {"id": "s8-1024", "steps": 8, "width": 1024, "height": 1024},
+    {"id": "s28-512", "steps": 28, "width": 512, "height": 512},
+    {"id": "s28-1024", "steps": 28, "width": 1024, "height": 1024},
+    {"id": "s28-768x1152", "steps": 28, "width": 768, "height": 1152},
+    {"id": "s28-1152x896", "steps": 28, "width": 1152, "height": 896},
+    {"id": "s50-1024", "steps": 50, "width": 1024, "height": 1024},
+    {"id": "s28-1536-long-seq", "steps": 28, "width": 1536, "height": 1536},
+    {"id": "s50-2048-long-seq", "steps": 50, "width": 2048, "height": 2048}
+  ],
+  "step_cases": [
+    {"id": "step-negative-512x512-s4-seed42", "seed": 42, "width": 512, "height": 512, "steps": 4, "guidance": 4.0,
+     "prompt": "a lighthouse on a rocky coast at dusk, oil painting", "negative_prompt": "blurry, low quality, text, watermark"},
+    {"id": "step-default-negative-768x512-s8-seed7", "seed": 7, "width": 768, "height": 512, "steps": 8, "guidance": 3.0,
+     "prompt": "a red bicycle leaning against a brick wall", "negative_prompt": null}
+  ],
+  "pixel_cases": [
+    {"id": "pixels-negative-512x512-s28-seed42", "seed": 42, "width": 512, "height": 512, "steps": 28, "guidance": 4.0,
+     "prompt": "a lighthouse on a rocky coast at dusk, oil painting", "negative_prompt": "blurry, low quality, text, watermark"},
+    {"id": "pixels-default-negative-512x512-s8-seed7", "seed": 7, "width": 512, "height": 512, "steps": 8, "guidance": 4.0,
+     "prompt": "a red bicycle leaning against a brick wall", "negative_prompt": null}
+  ]
+}
