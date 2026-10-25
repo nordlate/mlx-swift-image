@@ -10,13 +10,13 @@ Native Swift inference for image generation on Apple silicon, built on [MLX Swif
 > models it runs (Z-Image: Alibaba Tongyi-MAI; FLUX.2: Black Forest Labs).
 
 The Swift code is a
-port of the reference Python/MFLUX pipelines, checked against frozen parity cases and golden pixels. Pixel-identical means identical to MFLUX on those cases with the MLX build used when they were exported; against other MLX builds, a small `rms_norm` difference between the Python wheel and the Swift package (see below) can move pixels by a few levels.
+port of the reference Python/MFLUX pipelines, checked against frozen parity cases and golden pixels. Pixel-identical means identical to MFLUX on those cases with the MLX build used when they were exported; against other MLX builds, a small `rms_norm` difference between the Python wheel and the Swift package (see below) can move pixels by a few levels on average (mean 0.6–2.8 levels per channel on the Z-Image Turbo cases), with isolated pixels differing by up to about 150 levels.
 
 ## Models
 
 | Model | Product | Modes | Steps | Upstream model card (weights licence) | Parity |
 |---|---|---|---|---|---|
-| FLUX.2 Klein 4B, q4 | `FluxKlein` | text to image, image to image | 1...8 | [black-forest-labs/FLUX.2-klein-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B) | pixel-identical to MFLUX on the golden cases with the MLX build used when they were exported; not re-run against MFLUX since (this branch leaves Klein code and, in a native-versus-native check, its output unchanged) |
+| FLUX.2 Klein 4B, q4 | `FluxKlein` | text to image, image to image | 1...8 | [black-forest-labs/FLUX.2-klein-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B) | pixel-identical to MFLUX on the golden cases with the MLX build used when they were exported; not re-run against MFLUX since; 0.2.0 does not change Klein code, and a native-versus-native check against 0.1.0 gave identical output |
 | Z-Image Turbo, q4 | `ZImage` | text to image | 4...12 | [Tongyi-MAI/Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) | pixel-identical to MFLUX on the golden cases when they were exported; not reproduced with a later local re-export (see below) |
 | Z-Image Base, q4 | `ZImage` | text to image, guidance and negative prompt | 1...50 (28...50 recommended) | [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) (Apache 2.0; snapshot [mflux-community/z-image-base-mflux-q4](https://huggingface.co/mflux-community/z-image-base-mflux-q4)) | sigmas bit-identical and guided steps within tolerance against MFLUX 0.20; pixels within MFLUX's own eager-versus-compiled drift (see below) |
 
