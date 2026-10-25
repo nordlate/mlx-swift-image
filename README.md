@@ -55,7 +55,7 @@ parity inputs in `Tests/Fixtures`.
 Add the package at a pinned version (or revision) and depend on the library products you need (`MLXImageCore`, `ZImage`, `FluxKlein`, and `MLXImageParity` only if you run the parity harness):
 
 ```swift
-.package(url: "https://github.com/nordlate/mlx-swift-image", exact: "0.1.0")
+.package(url: "https://github.com/nordlate/mlx-swift-image", exact: "0.2.0")
 ```
 
 ```swift
