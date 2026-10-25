@@ -2,6 +2,13 @@
 
 The package uses semantic versioning. Before 1.0.0, a minor version may change the public API. Entries are grouped by product.
 
+## 0.2.0
+
+- **ZImage**: Z-Image Base q4 (`ZImageVariant.base`, `ZImageGenerator(modelDirectory:variant:)`): text to image with classifier-free guidance and a
+  negative prompt (`GenerationRequest.guidance`, `negativePrompt`; steps 1...50), following MFLUX 0.20's scheduler and guidance. Turbo's API
+  and output are unchanged; Turbo rejects guidance and a negative prompt; Base rejects a non-blank negative prompt with guidance of 1.0 or below, which would be ignored.
+- **MLXImageParity**: Z-Image Base checks (scheduler sigmas, guided steps, pixels) and their frozen cases.
+
 ## 0.1.0
 
 First public release.
