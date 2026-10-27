@@ -23,7 +23,7 @@ final class KleinTransformerWeightValidationTests: XCTestCase {
     }
 
     private func validParts() -> Parts {
-        let layout = KleinTransformerLayout.expectedTensors()
+        let layout = KleinTransformerLayout.klein4B.expectedTensors()
         let metadata = ["quantization_level": "4", "mflux_version": "0.19.0"]
         var map: [String: String] = [:]
         var entries: [String: [String: SafetensorsEntry]] = ["0.safetensors": [:], "1.safetensors": [:]]
@@ -37,9 +37,9 @@ final class KleinTransformerWeightValidationTests: XCTestCase {
     }
 
     func testArchitectureAndCompleteLayout() throws {
-        let layout = KleinTransformerLayout.expectedTensors()
+        let layout = KleinTransformerLayout.klein4B.expectedTensors()
         XCTAssertEqual(layout.count, 387)
-        XCTAssertEqual(KleinTransformerLayout.matrices().count, 109)
+        XCTAssertEqual(KleinTransformerLayout.klein4B.matrices().count, 109)
         XCTAssertEqual(layout["x_embedder.weight"]?.shape, [3072, 16])
         XCTAssertEqual(layout["context_embedder.scales"]?.shape, [3072, 120])
         XCTAssertEqual(layout["single_transformer_blocks.19.attn.to_qkv_mlp_proj.weight"]?.shape, [27648, 384])

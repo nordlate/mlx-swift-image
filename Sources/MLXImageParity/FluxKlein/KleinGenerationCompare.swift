@@ -54,8 +54,8 @@ public enum KleinGenerationCompare {
     }
     static func weightFailures(_ manifests: [String: KleinGenerationManifest]) -> [String] {
         var layout: [String: (dtype: String,shape: [Int])] = [:]
-        for (n,e) in TextEncoderLayout.expectedTensors() { layout["text_encoder."+n] = e }
-        for (n,e) in KleinTransformerLayout.expectedTensors() { layout["transformer."+n] = e }
+        for (n,e) in TextEncoderLayout.qwen3_4B.expectedTensors() { layout["text_encoder."+n] = e }
+        for (n,e) in KleinTransformerLayout.klein4B.expectedTensors() { layout["transformer."+n] = e }
         for (n,e) in KleinVAELayout.expectedTensors() { layout["vae."+n] = (e.dtype,e.shape) }
         var failures: [String] = []
         for (side,m) in manifests {

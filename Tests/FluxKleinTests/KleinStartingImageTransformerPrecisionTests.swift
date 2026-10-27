@@ -70,7 +70,7 @@ final class KleinStartingImageTransformerPrecisionTests: XCTestCase {
     func testJointProcessQKVRestoresActualFloat32ProjectionDtypeAndPreservesBF16Path() {
         Device.withDefaultDevice(.cpu) {
             // Tiny synthetic affine-q4 projections: 64 input features, the real 24x128 head layout. No model files or forward pass.
-            let channels = KleinTransformerLayout.dim
+            let channels = KleinTransformerLayout.klein4B.dim
             var tensors: [String: MLXArray] = [:]
             for name in ["q","k","v"] {
                 tensors[name+".weight"] = MLXArray.full([channels,8],values: MLXArray(UInt32(0x11111111)),dtype: .uint32)

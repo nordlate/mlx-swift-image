@@ -50,7 +50,7 @@ public enum KleinGenerationNative {
     }
     static func prefixed(_ d: [String: KleinTensorDigest],_ prefix: String) -> [String: KleinTensorDigest] { Dictionary(uniqueKeysWithValues: d.map { (prefix + "." + $0.key,$0.value) }) }
     static func quantized(isolated: Bool) -> [KleinQuantizedModule] {
-        let text = TextEncoderLayout.quantizedMatrices().map { KleinQuantizedModule(name: $0.name,bits: 4,groupSize: 64,mode: "affine") }
+        let text = TextEncoderLayout.qwen3_4B.quantizedMatrices().map { KleinQuantizedModule(name: $0.name,bits: 4,groupSize: 64,mode: "affine") }
         return (isolated ? [] : [("text_encoder",text),("transformer",KleinTransformerWeights.quantizedModules())]).flatMap { prefix,modules in
             modules.map { KleinQuantizedModule(name: prefix + "." + $0.name,bits: $0.bits,groupSize: $0.groupSize,mode: $0.mode) }
         } + KleinVAEWeights.quantizedModules().map { KleinQuantizedModule(name: "vae." + $0.name,bits: $0.bits,groupSize: $0.groupSize,mode: $0.mode) }

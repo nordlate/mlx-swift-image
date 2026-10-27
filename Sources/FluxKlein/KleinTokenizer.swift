@@ -14,8 +14,9 @@ public enum KleinTokenizer {
         "<|im_start|>user\n" + prompt + "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
     }
 
-    public static func load(modelDirectory: URL) throws -> QwenTokenizer {
-        try QwenTokenizer.load(modelDirectory: modelDirectory, pinnedFileHashes: KleinPins.tokenizerFiles, label: "FLUX.2 Klein 4B")
+    /// Both variants save byte-identical tokenizer files, so one set of pins serves both.
+    public static func load(modelDirectory: URL, variant: KleinVariant = .klein4B) throws -> QwenTokenizer {
+        try QwenTokenizer.load(modelDirectory: modelDirectory, pinnedFileHashes: KleinPins.tokenizerFiles, label: variant.displayName)
     }
 
     public static func tokenize(_ prompt: String, with tokenizer: QwenTokenizer) -> TokenizedPrompt {

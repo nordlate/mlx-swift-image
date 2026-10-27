@@ -39,11 +39,16 @@ public final class KleinGenerator {
     public let vae: KleinVAE
     /// The loaded weights (the arrays the encoder, transformer and VAE already hold). The parity harness reads them to compute digests.
     public let weights: (text: KleinTextWeights, transformer: KleinTransformerWeights, vae: KleinVAEWeights)
-    public init(modelDirectory: URL) throws {
-        let tokenizer = try KleinTokenizer.load(modelDirectory: modelDirectory)
-        let text = try KleinTextWeights.load(modelDirectory: modelDirectory), encoder = KleinTextEncoder(weights: text)
-        let transformer = try KleinTransformerWeights.load(modelDirectory: modelDirectory), vaeWeights = try KleinVAEWeights.load(modelDirectory: modelDirectory)
-        // No weight digests here: hashing every tensor (4.6 GB) cost about 1.8 s of every load, and only the parity harnesses (MLXImageParity) read them.
+    public let variant: KleinVariant
+    /// Loads a q4 `mflux-save` snapshot of `variant` (FLUX.2 Klein 4B by default). The snapshot is validated against the variant's layout
+    /// and pins before any tensor is read; a snapshot of the other size is refused.
+    public init(modelDirectory: URL, variant: KleinVariant = .klein4B) throws {
+        self.variant = variant
+        let tokenizer = try KleinTokenizer.load(modelDirectory: modelDirectory, variant: variant)
+        let text = try KleinTextWeights.load(modelDirectory: modelDirectory, variant: variant), encoder = KleinTextEncoder(weights: text)
+        let transformer = try KleinTransformerWeights.load(modelDirectory: modelDirectory, variant: variant)
+        let vaeWeights = try KleinVAEWeights.load(modelDirectory: modelDirectory, variant: variant)
+        // No weight digests here: hashing every tensor (4.6 GB for 4B) cost about 1.8 s of every load, and only the parity harnesses (MLXImageParity) read them.
         transformer.materialize()
         predict = KleinTransformer(weights: transformer).compiledPredict()
         vae = KleinVAE(weights: vaeWeights)

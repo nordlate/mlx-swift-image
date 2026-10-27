@@ -48,7 +48,7 @@ final class KleinLoadDigestTests: XCTestCase {
         XCTAssertEqual(loadDigested, 0, "KleinGenerator.init hashed weights")
         let ((text, transformer, vae), onDemand) = KleinDigestAudit.measure { (generator.weights.text.digests(), generator.weights.transformer.digests(), generator.weights.vae.digests()) }
         XCTAssertEqual(onDemand, text.count + transformer.count + vae.count)
-        XCTAssertEqual([text.count, transformer.count, vae.count], [905, KleinTransformerLayout.tensorCount, KleinVAELayout.tensorCount])
+        XCTAssertEqual([text.count, transformer.count, vae.count], [905, KleinTransformerLayout.klein4B.tensorCount, KleinVAELayout.tensorCount])
         // Same tensors, same bytes, same SHA-256 definition as a direct load of the weights.
         XCTAssertEqual(text, try KleinTextWeights.load(modelDirectory: model).digests())
         XCTAssertEqual(transformer, try KleinTransformerWeights.load(modelDirectory: model).digests())

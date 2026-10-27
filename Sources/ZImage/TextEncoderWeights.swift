@@ -36,7 +36,7 @@ public struct TextEncoderWeights {
         guard indexMeta["quantization_level"] == "\(TextEncoderLayout.bits)" else {
             throw WeightLoadError.invalid("index quantization_level \(indexMeta["quantization_level"] ?? "nil"), expected \(TextEncoderLayout.bits)")
         }
-        let expected = TextEncoderLayout.expectedTensors()
+        let expected = TextEncoderLayout.qwen3_4B.expectedTensors()
         let missing = Set(expected.keys).subtracting(weightMap.keys)
         let extra = Set(weightMap.keys).subtracting(expected.keys)
         guard missing.isEmpty, extra.isEmpty else {
@@ -63,7 +63,7 @@ public struct TextEncoderWeights {
         }
         // Same inference mflux's WeightApplier uses for stored quantization: bits from the packed width,
         // group size from the scales width. Here it must equal the layout constants for every matrix.
-        for matrix in TextEncoderLayout.layerMatrices(0) {
+        for matrix in TextEncoderLayout.qwen3_4B.layerMatrices(0) {
             let w = expected[matrix.name + ".weight"]!.shape.last!
             let s = expected[matrix.name + ".scales"]!.shape.last!
             precondition(w * 32 / matrix.input == TextEncoderLayout.bits && matrix.input / s == TextEncoderLayout.groupSize)

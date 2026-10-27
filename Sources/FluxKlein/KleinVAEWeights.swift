@@ -10,13 +10,17 @@ public struct KleinVAEWeights {
         return t
     }
 
-    public static func validate(weightMap: [String: String], indexMetadata: [String: String], shardHeaders: [String: SafetensorsHeader]) throws {
+    /// The VAE is the same for every variant (identical tensors); only the stored `mflux_version` differs.
+    public static func validate(
+        weightMap: [String: String], indexMetadata: [String: String], shardHeaders: [String: SafetensorsHeader], variant: KleinVariant = .klein4B
+    ) throws {
         func fail(_ message: String) -> KleinTransformerError { .invalidWeights(message) }
+        let mfluxVersion = variant.storedMfluxVersion
         guard indexMetadata["quantization_level"] == KleinPins.storedQuantizationLevel else {
             throw fail("index quantization_level \(indexMetadata["quantization_level"] ?? "nil"), expected \(KleinPins.storedQuantizationLevel)")
         }
-        guard indexMetadata["mflux_version"] == KleinPins.storedMfluxVersion else {
-            throw fail("index mflux_version \(indexMetadata["mflux_version"] ?? "nil"), expected \(KleinPins.storedMfluxVersion)")
+        guard indexMetadata["mflux_version"] == mfluxVersion else {
+            throw fail("index mflux_version \(indexMetadata["mflux_version"] ?? "nil"), expected \(mfluxVersion)")
         }
         let expected = KleinVAELayout.expectedTensors()
         let missing = Set(expected.keys).subtracting(weightMap.keys)
@@ -30,8 +34,8 @@ public struct KleinVAEWeights {
         var seen = Set<String>()
         for (shard, header) in shardHeaders.sorted(by: { $0.key < $1.key }) {
             guard header.metadata["quantization_level"] == KleinPins.storedQuantizationLevel,
-                  header.metadata["mflux_version"] == KleinPins.storedMfluxVersion else {
-                throw fail("\(shard) metadata \(header.metadata), expected quantization_level \(KleinPins.storedQuantizationLevel) and mflux_version \(KleinPins.storedMfluxVersion)")
+                  header.metadata["mflux_version"] == mfluxVersion else {
+                throw fail("\(shard) metadata \(header.metadata), expected quantization_level \(KleinPins.storedQuantizationLevel) and mflux_version \(mfluxVersion)")
             }
             guard Set(header.entries.keys) == Set(weightMap.filter { $0.value == shard }.keys) else {
                 throw fail("\(shard) tensors do not match the index assignment")
@@ -63,7 +67,7 @@ public struct KleinVAEWeights {
         }
     }
 
-    static func readAndValidate(modelDirectory: URL) throws -> (weightCount: Int, shards: [String]) {
+    static func readAndValidate(modelDirectory: URL, variant: KleinVariant = .klein4B) throws -> (weightCount: Int, shards: [String]) {
         let dir = modelDirectory.appendingPathComponent("vae")
         let indexURL = dir.appendingPathComponent("model.safetensors.index.json")
         guard let index = try JSONSerialization.jsonObject(with: Data(contentsOf: indexURL)) as? [String: Any],
@@ -71,12 +75,12 @@ public struct KleinVAEWeights {
         else { throw KleinTransformerError.invalidWeights("unreadable \(indexURL.lastPathComponent)") }
         var headers: [String: SafetensorsHeader] = [:]
         for shard in Set(weightMap.values) { headers[shard] = try SafetensorsHeader.read(from: dir.appendingPathComponent(shard)) }
-        try validate(weightMap: weightMap, indexMetadata: metadata, shardHeaders: headers)
+        try validate(weightMap: weightMap, indexMetadata: metadata, shardHeaders: headers, variant: variant)
         return (weightMap.count, headers.keys.sorted())
     }
 
-    public static func load(modelDirectory: URL) throws -> KleinVAEWeights {
-        let (count, shards) = try readAndValidate(modelDirectory: modelDirectory)
+    public static func load(modelDirectory: URL, variant: KleinVariant = .klein4B) throws -> KleinVAEWeights {
+        let (count, shards) = try readAndValidate(modelDirectory: modelDirectory, variant: variant)
         var tensors: [String: MLXArray] = [:]
         for shard in shards {
             let url = modelDirectory.appendingPathComponent("vae").appendingPathComponent(shard)
