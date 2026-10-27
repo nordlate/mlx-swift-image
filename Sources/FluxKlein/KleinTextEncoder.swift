@@ -4,7 +4,8 @@ import MLXFast
 import MLXImageCore
 import MLXNN
 
-/// Port of mflux's `Qwen3TextEncoder` (`flux2/model/flux2_text_encoder/qwen3_text_encoder.py`) as Klein 4B runs it, op for op.
+/// Port of mflux's `Qwen3TextEncoder` (`flux2/model/flux2_text_encoder/qwen3_text_encoder.py`) as Klein runs it, op for op (Qwen3 4B
+/// for Klein 4B, Qwen3 8B for Klein 9B: the same graph, only the hidden and MLP widths differ, and they come from the stored tensors).
 ///
 /// This is deliberately not the Z-Image encoder (`TextEncoder`): the dtype flow, norms, mask, rotation order and attention
 /// precision all differ.
@@ -122,7 +123,7 @@ public struct KleinTextEncoder {
 
     // MARK: Forward
 
-    /// The states of `hidden_states_list` at the requested indices, each `[B, S, 2560]` bfloat16 (index 0 is the embedding output).
+    /// The states of `hidden_states_list` at the requested indices, each `[B, S, hidden]` bfloat16 (index 0 is the embedding output).
     /// Nothing past the highest requested index is evaluated; the returned arrays are lazy until the caller evaluates them.
     public func hiddenStates(inputIDs: MLXArray, attentionMask: MLXArray, indices: Set<Int>) -> [Int: MLXArray] {
         precondition(!indices.isEmpty && indices.allSatisfy { (0...TextEncoderLayout.layerCount).contains($0) })

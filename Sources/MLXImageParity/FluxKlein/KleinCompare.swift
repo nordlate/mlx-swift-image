@@ -293,7 +293,7 @@ public enum KleinCompare {
         }
         checks.append(check("model-artifacts-unchanged", artifacts))
 
-        let layout = TextEncoderLayout.expectedTensors()
+        let layout = TextEncoderLayout.qwen3_4B.expectedTensors()
         var weightFailures: [String] = []
         for (label, manifest) in [("reference", reference), ("native", native)] where Set(manifest.weights.keys) != Set(layout.keys) {
             weightFailures.append("\(label) loaded tensor names differ from the 905 stored names: missing \(Set(layout.keys).subtracting(manifest.weights.keys).sorted().prefix(5)), unexpected \(Set(manifest.weights.keys).subtracting(layout.keys).sorted().prefix(5))")
@@ -308,7 +308,7 @@ public enum KleinCompare {
         var quant: [String] = []
         let sortedRef = reference.quantizedModules.sorted { $0.name < $1.name }, sortedNative = native.quantizedModules.sorted { $0.name < $1.name }
         if sortedRef != sortedNative { quant.append("quantized modules differ between MFLUX and native") }
-        let expectedModules = Set(TextEncoderLayout.quantizedMatrices().map { $0.name })
+        let expectedModules = Set(TextEncoderLayout.qwen3_4B.quantizedMatrices().map { $0.name })
         if Set(sortedRef.map(\.name)) != expectedModules || sortedRef.count != expectedModules.count {
             quant.append("reference quantized modules are not the architecture's \(expectedModules.count) matrices (\(sortedRef.count) reported)")
         }

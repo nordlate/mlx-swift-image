@@ -266,8 +266,8 @@ public enum KleinTransformerCompare {
                 }
             }
         }
-        compareWeights("text", TextEncoderLayout.expectedTensors(), [("reference", reference.textWeights), ("native", native.textWeights)])
-        compareWeights("transformer", KleinTransformerLayout.expectedTensors(), [("reference", reference.transformerWeights), ("native", native.transformerWeights), ("isolated", isolated.transformerWeights)])
+        compareWeights("text", TextEncoderLayout.qwen3_4B.expectedTensors(), [("reference", reference.textWeights), ("native", native.textWeights)])
+        compareWeights("transformer", KleinTransformerLayout.klein4B.expectedTensors(), [("reference", reference.transformerWeights), ("native", native.transformerWeights), ("isolated", isolated.transformerWeights)])
         if !isolated.textWeights.isEmpty { weightFailures.append("the isolated run unexpectedly reports text weights") }
         checks.append(KleinCompare.check("loaded-weight-bytes", KleinCompare.capped(weightFailures)))
 
@@ -280,8 +280,8 @@ public enum KleinTransformerCompare {
             }
             if Set(sorted.map { $0.1 }.map { $0.map { "\($0.name)/\($0.bits)/\($0.groupSize)/\($0.mode)" } }).count > 1 { quant.append("\(label) quantized modules differ between \(sides.map(\.0))") }
         }
-        compareQuant("text", expected: Set(TextEncoderLayout.quantizedMatrices().map(\.name)), [("reference", reference.textQuantizedModules), ("native", native.textQuantizedModules)])
-        compareQuant("transformer", expected: Set(KleinTransformerLayout.matrices().map(\.name)),
+        compareQuant("text", expected: Set(TextEncoderLayout.qwen3_4B.quantizedMatrices().map(\.name)), [("reference", reference.textQuantizedModules), ("native", native.textQuantizedModules)])
+        compareQuant("transformer", expected: Set(KleinTransformerLayout.klein4B.matrices().map(\.name)),
                      [("reference", reference.transformerQuantizedModules), ("native", native.transformerQuantizedModules), ("isolated", isolated.transformerQuantizedModules)])
         checks.append(KleinCompare.check("quantization", quant))
 

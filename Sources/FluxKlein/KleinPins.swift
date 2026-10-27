@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// Everything slice 1 pins about the FLUX.2 Klein 4B q4 snapshot and the bundled MFLUX runtime it is compared with. The values
+/// Everything slice 1 pins about the FLUX.2 Klein q4 snapshots (the tokenizer files are the same for 4B and 9B) and the bundled MFLUX runtime it is compared with. The values
 /// were measured from the installed model (`model-before.json`) and the production runtime's bytecode (`reference-code-audit.json`)
 /// before any native result existed. Nothing is inherited from the Z-Image pins: Klein's `tokenizer_config.json` differs.
 public enum KleinPins {
@@ -11,9 +11,8 @@ public enum KleinPins {
         "chat_template.jinja": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8",
     ]
 
-    /// Stored metadata of every text-encoder shard and of the index.
+    /// Stored `quantization_level` of every shard and index. The stored `mflux_version` is per variant (`KleinVariant.storedMfluxVersion`).
     public static let storedQuantizationLevel = "4"
-    public static let storedMfluxVersion = "0.19.0"
 
 }
 

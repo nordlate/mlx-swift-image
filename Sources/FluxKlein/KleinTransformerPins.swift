@@ -1,10 +1,8 @@
 import Foundation
 
-/// The transformer shard layout the loader checks. The file hashes and runtime-module pins of the parity run live in MLXImageParity.
-public enum KleinTransformerPins {
-    /// Tensors per transformer shard (`model-before.json`): 375 + 12 = 387.
-    public static let shardTensorCounts: [String: Int] = ["0.safetensors": 375, "1.safetensors": 12]
-}
+/// The transformer shard layout the loader checks is per variant (`KleinVariant.transformerShardTensorCounts`). The file hashes and
+/// runtime-module pins of the 4B parity run live in MLXImageParity.
+public enum KleinTransformerPins {}
 
 public enum KleinTransformerError: Error, CustomStringConvertible {
     case artifactChanged(String)

@@ -1,0 +1,17 @@
+{
+  "_comment": "FLUX.2 Klein generation parity against MFLUX 0.20 (guidance 1.0, flow_match_euler_discrete, untiled), shared by the Python exporter and the native checker and used for both variants. Text cases are complete text-to-image jobs; image cases are image-to-image jobs from the synthetic RGB-v1 starting image (KleinStartingImageCases.rgb), written as a PNG by the exporter. The exporter records MFLUX's compiled per-step latents and the pixels of its real generate_image, compiled and eager.",
+  "text_cases": [
+    {"id": "t1-square1024-s4-seed42", "seed": 42, "width": 1024, "height": 1024, "steps": 4,
+     "prompt": "A red bicycle leaning against a weathered brick wall, soft morning light, 35mm photograph"},
+    {"id": "t2-portrait672x896-unicode-s4-seed7", "seed": 7, "width": 672, "height": 896, "steps": 4,
+     "prompt": "Hämärä syysilta järven rannalla, sumua ja kuusimetsää. 湖畔の静かな山小屋、夕暮れの霧 Ääkköset: äöå ÄÖÅ"},
+    {"id": "t3-square512-s8-seed0", "seed": 0, "width": 512, "height": 512, "steps": 8,
+     "prompt": "cat"}
+  ],
+  "image_cases": [
+    {"id": "i1-square768-s4-mid-seed42", "seed": 42, "width": 768, "height": 768, "steps": 4, "strength": 0.625,
+     "prompt": "A red bicycle leaning against a brick wall."},
+    {"id": "i2-landscape896x672-s8-strong-seed31337", "seed": 31337, "width": 896, "height": 672, "steps": 8, "strength": 0.9375,
+     "prompt": "A warm lantern on a wooden table."}
+  ]
+}

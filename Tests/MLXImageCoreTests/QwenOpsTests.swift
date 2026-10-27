@@ -11,7 +11,7 @@ final class QwenOpsTests: XCTestCase {
     }
 
     func testQuantizedMatricesAreTheEmbeddingThenSevenPerLayer() {
-        let matrices = TextEncoderLayout.quantizedMatrices()
+        let matrices = TextEncoderLayout.qwen3_4B.quantizedMatrices()
         XCTAssertEqual(matrices.count, 1 + 36 * 7)
         XCTAssertEqual(matrices.first?.name, "embed_tokens")
         XCTAssertEqual(matrices[1].name, "layers.0.self_attn.q_proj")

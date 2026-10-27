@@ -60,7 +60,7 @@ public enum KleinNativeExport {
 
         let after = try KleinHashing.verifyModelFiles(modelDirectory: modelDirectory)
         // What the native encoder constructs: every quantized matrix is applied with the layout's bits, group size and affine mode.
-        let quantized = TextEncoderLayout.quantizedMatrices().map {
+        let quantized = TextEncoderLayout.qwen3_4B.quantizedMatrices().map {
             KleinQuantizedModule(name: $0.name, bits: TextEncoderLayout.bits, groupSize: TextEncoderLayout.groupSize, mode: "affine")
         }
         let env = ProcessInfo.processInfo

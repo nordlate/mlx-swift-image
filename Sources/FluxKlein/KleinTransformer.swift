@@ -27,13 +27,15 @@ public enum KleinTransformerTrace {
     public static let allKeys: [String] = embeddingKeys + blockKeys + finalKeys
 }
 
-/// Port of mflux's `Flux2Transformer` (`flux2/model/flux2_transformer/`), op for op, for FLUX.2 Klein 4B q4 as the production path
+/// Port of mflux's `Flux2Transformer` (`flux2/model/flux2_transformer/`), op for op, for FLUX.2 Klein 4B and 9B q4 as the production path
 /// runs it: `guidance=None`, `kv_cache=None`, no reference-image blending, a single batch row. The dtype flow is the reference's: the
 /// timestep is scaled in the latents' dtype, q/k norms run in float32 (joint casts back; single always casts to bfloat16), and RoPE
 /// mixes in float32 and casts back. Float32 img2img residuals are preserved. No classifier-free-guidance branch, KV cache, edit conditioning or
 /// training support exists here.
 public struct KleinTransformer {
     let weights: KleinTransformerWeights
+    /// The variant's widths and depths, from the loaded weights.
+    var layout: KleinTransformerLayout { weights.layout }
 
     public init(weights: KleinTransformerWeights) {
         self.weights = weights
@@ -129,7 +131,7 @@ public struct KleinTransformer {
 
     /// `AttentionUtils.process_qkv`: projections reshaped to `[B, H, S, D]`, q and k normalized in float32.
     func processQKV(_ x: MLXArray, q: String, k: String, v: String, normQ: String, normK: String) -> (MLXArray, MLXArray, MLXArray) {
-        let (b, s, h, d) = (x.dim(0), x.dim(1), KleinTransformerLayout.heads, KleinTransformerLayout.headDim)
+        let (b, s, h, d) = (x.dim(0), x.dim(1), layout.heads, KleinTransformerLayout.headDim)
         func heads(_ name: String) -> MLXArray { linear(x, name).reshaped(b, s, h, d).transposed(0, 2, 1, 3) }
         return (qkNorm(heads(q), normQ), qkNorm(heads(k), normK), heads(v))
     }
@@ -137,7 +139,7 @@ public struct KleinTransformer {
     /// `AttentionUtils.compute_attention` (no mask): SDPA, `[B, H, S, D]` to `[B, S, H * D]`.
     static func attention(_ q: MLXArray, _ k: MLXArray, _ v: MLXArray) -> MLXArray {
         let out = MLXFast.scaledDotProductAttention(queries: q, keys: k, values: v, scale: attentionScale, mask: MLXFast.ScaledDotProductAttentionMaskMode.none)
-        return out.transposed(0, 2, 1, 3).reshaped(q.dim(0), -1, KleinTransformerLayout.heads * KleinTransformerLayout.headDim)
+        return out.transposed(0, 2, 1, 3).reshaped(q.dim(0), -1, q.dim(1) * q.dim(3))  // heads * head_dim
     }
 
     /// `Flux2Attention.__call__` with `added_kv_proj_dim` set: text tokens first, then image tokens. Returns (image, text) outputs.
@@ -200,11 +202,11 @@ public struct KleinTransformer {
         let (shift, scale, gate) = (mod[0], mod[1], mod[2])
         let normHidden = (1 + scale) * Self.layerNorm(hidden) + shift
         let proj = linear(normHidden, p + "to_qkv_mlp_proj")
-        let inner = KleinTransformerLayout.dim
+        let inner = layout.dim
         let top = proj.split(indices: [inner * 3], axis: -1)
         let qkv = top[0].split(parts: 3, axis: -1)
         let (batch, seq) = (qkv[0].dim(0), qkv[0].dim(1))
-        let (h, d) = (KleinTransformerLayout.heads, KleinTransformerLayout.headDim)
+        let (h, d) = (layout.heads, KleinTransformerLayout.headDim)
         func heads(_ x: MLXArray) -> MLXArray { x.reshaped(batch, seq, h, d).transposed(0, 2, 1, 3) }
         // Flux2ParallelSelfAttention casts normalized Q/K to BF16 before RoPE, even with float32 projections/residuals.
         var query = qkNorm(heads(qkv[0]), p + "norm_q", outputDType: .bfloat16)
@@ -219,7 +221,7 @@ public struct KleinTransformer {
     /// `AdaLayerNormContinuous.__call__`: `norm(x) * (1 + scale) + shift` from `linear(silu(temb))`.
     public func normOut(_ x: MLXArray, temb: MLXArray) -> MLXArray {
         let t = linear(silu(temb).asType(.bfloat16), "norm_out.linear")
-        let dim = KleinTransformerLayout.dim
+        let dim = layout.dim
         let scale = t[0..., 0 ..< dim], shift = t[0..., dim ..< (2 * dim)]
         return Self.layerNorm(x) * expandedDimensions(1 + scale, axis: 1) + expandedDimensions(shift, axis: 1)
     }
@@ -227,7 +229,7 @@ public struct KleinTransformer {
     // MARK: Forward
 
     /// `Flux2Transformer.__call__` for `guidance=None`, `kv_cache=None`. `hiddenStates` is the packed latents `[B, N, 128]`,
-    /// `encoderHiddenStates` the prompt embeddings `[B, S, 7680]`, `timestep` the scheduler's float32 timestep (scalar or `[B]`),
+    /// `encoderHiddenStates` the prompt embeddings `[B, S, joint_attention_dim]`, `timestep` the scheduler's float32 timestep (scalar or `[B]`),
     /// `imgIDs` `[B, N, 4]` / `[N, 4]` and `txtIDs` `[B, S, 4]` / `[S, 4]` (int32). Returns the predicted noise `[B, N, 128]`.
     /// `trace` receives the named intermediates of `KleinTransformerTrace`; it never changes the computation.
     public func forward(
@@ -263,7 +265,7 @@ public struct KleinTransformer {
             for (k, a) in (modTxt[0] + modTxt[1]).enumerated() { trace("mod_txt.\(k)", a) }
         }
 
-        for i in 0..<KleinTransformerLayout.doubleBlocks {
+        for i in 0..<layout.doubleBlocks {
             let traced = trace != nil && KleinTransformerTrace.doubleBlocks.contains(i)
             if traced { trace?("double.\(i).in_hidden", hidden); trace?("double.\(i).in_encoder", encoder) }
             (encoder, hidden) = doubleBlock(i, hidden: hidden, encoder: encoder, modImg: modImg, modTxt: modTxt, cos: cos, sin: sin)
@@ -274,7 +276,7 @@ public struct KleinTransformer {
         hidden = concatenated([encoder, hidden], axis: 1)
         let modSingle = modulation(temb, name: "single_stream_modulation", sets: 1)[0]
         if let trace { for (k, a) in modSingle.enumerated() { trace("mod_single.\(k)", a) } }
-        for i in 0..<KleinTransformerLayout.singleBlocks {
+        for i in 0..<layout.singleBlocks {
             let traced = trace != nil && KleinTransformerTrace.singleBlocks.contains(i)
             if traced { trace?("single.\(i).in", hidden) }
             hidden = singleBlock(i, hidden: hidden, mod: modSingle, cos: cos, sin: sin)

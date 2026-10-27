@@ -37,7 +37,7 @@ public extension KleinTransformerWeights {
 
     /// The module the applier quantizes at the stored precision: all 109 matrices, 4-bit, group 64, affine.
     static func quantizedModules() -> [KleinQuantizedModule] {
-        KleinTransformerLayout.matrices().map {
+        KleinTransformerLayout.klein4B.matrices().map {
             KleinQuantizedModule(name: $0.name, bits: KleinTransformerLayout.bits, groupSize: KleinTransformerLayout.groupSize, mode: "affine")
         }
     }

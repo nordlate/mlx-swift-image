@@ -71,7 +71,8 @@ final class KleinEncoderPieceTests: XCTestCase {
             let encoder = KleinTextEncoder(weights: KleinTextWeights(tensors: ["rotary_emb.inv_freq": MLXArray.zeros([64])]))
             XCTAssertThrowsError(try KleinPromptEncoder.encode(TokenizedPrompt(inputIDs: [1, 2], attentionMask: [1, 1], dtype: "mlx.core.int64"), with: encoder))
             XCTAssertThrowsError(try KleinPromptEncoder.encode(TokenizedPrompt(inputIDs: [], attentionMask: [], dtype: "mlx.core.int64"), with: encoder))
-            XCTAssertEqual(KleinPromptEncoder.embeddingWidth, 7680)
+            XCTAssertEqual(KleinPromptEncoder.embeddingWidth(.qwen3_4B), 7680)
+            XCTAssertEqual(KleinPromptEncoder.embeddingWidth(.qwen3_8B), KleinTransformerLayout.klein9B.jointAttentionDim)
             XCTAssertEqual(KleinTextEncoder.selectedLayers, [9, 18, 27])
         }
     }

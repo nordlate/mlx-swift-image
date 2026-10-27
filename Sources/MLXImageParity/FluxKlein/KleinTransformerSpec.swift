@@ -27,7 +27,7 @@ public enum KleinTransformerTensors {
     }
 
     public static func primaryLayout(_ c: KleinTransformerCase) -> [String: Expect] {
-        let n = c.imageSeqLen, s = sequenceLength, d = KleinTransformerLayout.dim
+        let n = c.imageSeqLen, s = sequenceLength, d = KleinTransformerLayout.klein4B.dim
         var layout: [String: Expect] = [
             "prompt_embeds": Expect(dtype: bf16, shape: [1, s, 7680]), "text_ids": Expect(dtype: i32, shape: [1, s, 4]),
             "latents": Expect(dtype: bf16, shape: [1, n, 128]), "latent_ids": Expect(dtype: i32, shape: [1, n, 4]),

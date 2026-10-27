@@ -17,6 +17,17 @@ enum KleinTestSupport {
         return url
     }
 
+    /// The read-only FLUX.2 Klein 9B q4 snapshot written by `mflux-save` 0.20 (`KLEIN9B_MODEL_DIR`).
+    static func requireModel9B() throws -> URL {
+        guard let path = ProcessInfo.processInfo.environment["KLEIN9B_MODEL_DIR"], !path.isEmpty else {
+            throw XCTSkip("KLEIN9B_MODEL_DIR is not set; point it at a FLUX.2 Klein 9B q4 snapshot")
+        }
+        let url = URL(fileURLWithPath: path, isDirectory: true)
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: url.appendingPathComponent("text_encoder/model.safetensors.index.json").path),
+                          "KLEIN9B_MODEL_DIR: Klein 9B q4 snapshot not found at \(url.path)")
+        return url
+    }
+
     /// Frozen parity cases and budgets: Tests/Fixtures/klein (copies of the experiment's klein/ inputs).
     static var kleinDirectory: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -25,7 +36,7 @@ enum KleinTestSupport {
 
     /// A layout-consistent index and shard headers (data ranges are irrelevant to header validation), split over two shards.
     static func validParts() -> (weightMap: [String: String], metadata: [String: String], headers: [String: SafetensorsHeader]) {
-        let expected = TextEncoderLayout.expectedTensors()
+        let expected = TextEncoderLayout.qwen3_4B.expectedTensors()
         var weightMap: [String: String] = [:]
         var entries: [String: [String: SafetensorsEntry]] = ["0.safetensors": [:], "1.safetensors": [:]]
         for (name, want) in expected {
@@ -48,7 +59,7 @@ final class KleinWeightValidationTests: XCTestCase {
         let parts = KleinTestSupport.validParts()
         XCTAssertEqual(parts.weightMap.count, 905)
         XCTAssertNoThrow(try validate(parts))
-        XCTAssertEqual(TextEncoderLayout.quantizedMatrices().count, 1 + 36 * 7)
+        XCTAssertEqual(TextEncoderLayout.qwen3_4B.quantizedMatrices().count, 1 + 36 * 7)
     }
 
     func testRejectsWrongQuantizationOrVersionMetadata() {
