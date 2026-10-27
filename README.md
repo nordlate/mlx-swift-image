@@ -3,7 +3,8 @@
 Native Swift inference for image generation on Apple silicon, built on [MLX Swift](https://github.com/ml-explore/mlx-swift):
 
 - **FLUX.2 Klein 4B** (q4): text to image, and image to image from a prepared starting image
-- **FLUX.2 Klein 9B** (q4): the same modes as 4B, through the same code path
+- **FLUX.2 Klein 9B** (q4): the same modes as 4B, through the same code path, and a converter that makes its q4 snapshot from the official
+  bf16 download, byte-identical to `mflux-save`
 - **Z-Image Turbo** (q4): text to image
 - **Z-Image Base** (q4): text to image with classifier-free guidance and a negative prompt
 
@@ -23,9 +24,10 @@ port of the reference Python/MFLUX pipelines, checked against frozen parity case
 | Z-Image Base, q4 | `ZImage` | text to image, guidance and negative prompt | 1...50 (28...50 recommended) | [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) (Apache 2.0; snapshot [mflux-community/z-image-base-mflux-q4](https://huggingface.co/mflux-community/z-image-base-mflux-q4)) | sigmas bit-identical and guided steps within tolerance against MFLUX 0.20; pixels within MFLUX's own eager-versus-compiled drift (see below) |
 
 Model weights are **not included** and are not downloaded by this package. Each model has its own licence and terms: check the model cards of the
-snapshots you use before running or redistributing them. The loaders read pre-quantized (q4) snapshots in the `mflux-save` layout and have no
-quantizer of their own. FLUX.2 Klein 9B is under the FLUX Non-Commercial License and is gated on Hugging Face: you need to accept its terms
-and make the q4 snapshot yourself; nothing in this repository contains or fetches its weights.
+snapshots you use before running or redistributing them. The loaders read pre-quantized (q4) snapshots in the `mflux-save` layout. For FLUX.2
+Klein 9B, `KleinConverter` makes that snapshot from the official bf16 download (see [Converting FLUX.2 Klein 9B](#converting-flux2-klein-9b));
+the other models have no quantizer here. FLUX.2 Klein 9B is under the FLUX Non-Commercial License and is gated on Hugging Face: you need to
+accept its terms, download it and convert it yourself; nothing in this repository contains or fetches its weights.
 
 > **No safeguards.** These pipelines run the models directly. They do not include the content filters, safety checkers or other safeguards
 > that model makers or hosted services may provide. If you ship them in an app, you are responsible for any safeguards your use needs.
@@ -43,7 +45,7 @@ and make the q4 snapshot yourself; nothing in this repository contains or fetche
 |---|---|
 | `MLXImageCore` | What both models share: the Qwen3 q4 text-encoder layout and ops, the Qwen tokenizer, safetensors header checks, PNG/JPEG output |
 | `ZImage` | Z-Image Turbo and Base: text encoder, transformer, schedulers, VAE, weight loaders, generator |
-| `FluxKlein` | FLUX.2 Klein 4B and 9B (`KleinVariant`): text encoder, transformer, VAE (with encoder for starting images), scheduler, weight loaders, generator. One code path; the variant sets the transformer and text-encoder sizes (`KleinTransformerLayout.klein4B`/`.klein9B`, `TextEncoderLayout.qwen3_4B`/`.qwen3_8B`) and the pinned snapshot layout |
+| `FluxKlein` | FLUX.2 Klein 4B and 9B (`KleinVariant`): text encoder, transformer, VAE (with encoder for starting images), scheduler, weight loaders, generator, and the 9B converter (`KleinConverter`). One code path; the variant sets the transformer and text-encoder sizes (`KleinTransformerLayout.klein4B`/`.klein9B`, `TextEncoderLayout.qwen3_4B`/`.qwen3_8B`) and the pinned snapshot layout |
 | `MLXImageParity` | Validation harness for the models: frozen cases, comparisons against reference exports, tolerances and budgets, parity metrics, pins and manifests. Not needed for inference |
 
 `ZImage` and `FluxKlein` depend on `MLXImageCore` and never on each other, and neither depends on `MLXImageParity`. The two models keep separate
@@ -84,6 +86,48 @@ let klein9B = try KleinGenerator(modelDirectory: URL(fileURLWithPath: "/path/to/
 See `Sources/ZImage/Pipeline.swift` and `Sources/FluxKlein/KleinGeneration.swift` for the full request and output types. MLX needs a Metal
 library at run time; the stock mlx-swift build provides it.
 
+## Converting FLUX.2 Klein 9B
+
+`KleinConverter` turns the official bf16 diffusers release ([black-forest-labs/FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B),
+about 35 GB) into the q4 snapshot `KleinGenerator(modelDirectory:variant: .klein9B)` loads. The output is byte for byte what
+`mflux-save --base-model flux2-klein-9b --quantize 4` (MFLUX 0.20) writes from the same files: tensor names, dtypes, shapes, data order,
+shard split, metadata (`mflux_version` 0.20.0) and the tokenizer files the loader pins. No Python is needed.
+
+```swift
+import FluxKlein
+
+let source = URL(fileURLWithPath: "/path/to/FLUX.2-klein-9B")        // the Hugging Face download, read only
+let output = URL(fileURLWithPath: "/path/to/flux2-klein-9b-q4")      // must not exist yet
+
+let snapshot = try KleinSourceSnapshot.inspect(directory: source)    // structure, configs, small-file hashes; no weights read
+let needed = try KleinConverter.requiredBytes(for: snapshot.variant) // 9,541,191,231 bytes for 9B
+let result = try await KleinConverter.convert(sourceDirectory: source, outputDirectory: output) { progress in
+    print(progress.fractionCompleted)
+}
+let klein9B = try KleinGenerator(modelDirectory: result.outputDirectory, variant: .klein9B)
+```
+
+- **Validation** (`KleinSourceSnapshot.inspect`): `model_index.json` must name `Flux2KleinPipeline` with the Klein components and
+  `is_distilled: true`; the transformer config selects the variant and both configs must agree with it; every required file must be present
+  with the official size and every small file with its SHA-256; the component folders may hold only files of the release; the weight files'
+  headers must hold exactly the expected bf16 tensors. Errors are `KleinConversionError` cases: `notKlein`, `unsupportedVariant` (another size,
+  a base model, or Klein 4B, which has no conversion pins yet), `missingFile`, `unexpectedFile`, `sizeMismatch`, `hashMismatch`, `invalidFile`.
+  The pins (`KleinOfficialRelease.klein9B`) are the Hugging Face LFS SHA-256s of revision `92196c8e`.
+- **Conversion**: every linear layer and the token embedding are quantized (affine 4-bit, group size 64) on the CPU by `KleinQ4Quantizer`,
+  which reproduces MLX's Metal `affine_quantize` kernel exactly. MLX's own CPU quantizer is not used: it starts the group maximum at minus
+  infinity instead of 0 and rounds half to even instead of away from zero, so it gives different bytes for some groups. No GPU kernel runs.
+  The weight files are memory-mapped and streamed tensor by tensor; each is hashed in the same pass, so the 35 GB are read once.
+  A mismatching hash fails the conversion.
+- **Output**: written into a hidden staging folder next to the output, synced, checked with the loaders' header validation and then renamed
+  into place. Cancellation (`isCancelled`, or cancelling the task of the async `convert`) and any failure remove the staging folder. The
+  source folder is only read. `requiredBytes(for:)` is the exact size of the output, for a disk-space check.
+- **Data order**: MLX writes tensor data in the iteration order of a C++ `std::unordered_map`. The converter gets that order by inserting
+  the same names, in mflux's parameter order, into the same map through mlx-c and saving placeholder scalars, then writes the real data at
+  those offsets.
+
+Measured on an M5 Max (64 GB), release build: 18.4 s for the 9B release (bound by reading and hashing the 35 GB; hashing alone takes 13 s),
+peak `phys_footprint` 0.1 GiB (the source pages are file-backed and released after each tensor). MFLUX's own conversion peaks at 19.2 GB.
+
 ## Tests
 
 ```bash
@@ -99,6 +143,7 @@ Tests that need model files or a reference export skip themselves with a message
 | `KLEIN_MODEL_DIR` (alias `KLEIN_Q4_MODEL_DIR`) | A FLUX.2 Klein 4B q4 snapshot (read only) |
 | `ZIMAGE_BASE_MODEL_DIR` | A Z-Image Base q4 snapshot (read only) |
 | `KLEIN9B_MODEL_DIR` | A FLUX.2 Klein 9B q4 snapshot written by `mflux-save` 0.20 (read only) |
+| `KLEIN9B_BF16_DIR` | The official FLUX.2 Klein 9B bf16 download (read only). With `KLEIN9B_MODEL_DIR`, the converter test converts it, compares every file and tensor with the MFLUX snapshot and generates one image from each; the output goes under `KLEIN_CONVERSION_OUTPUT_DIR` (default: the temporary folder) and is removed unless `KLEIN_CONVERSION_KEEP=1` |
 | `KLEIN9B_REFERENCE_DIR`, `KLEIN_REFERENCE_DIR` | Python/MFLUX 0.20 Klein 9B and 4B generation exports (`manifest.json`, per-case safetensors, input PNGs) for the cases in `Tests/Fixtures/reference/klein_generation_cases.json`; `KLEIN_PARITY_REPORT` optionally names a directory for the JSON reports |
 | `ZIMAGE_BASE_REFERENCE_DIR` | A Python/MFLUX 0.20 Z-Image Base reference export (`manifest.json`, per-case safetensors) for the guided step and pixel parity tests |
 | `ZIMAGE_REFERENCE_DIR` | A Python/MFLUX reference export (`manifest.json` and per-case safetensors) for the Z-Image tokenizer parity test |

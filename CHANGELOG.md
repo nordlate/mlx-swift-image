@@ -11,6 +11,12 @@ The package uses semantic versioning. Before 1.0.0, a minor version may change t
   `KleinPins.storedMfluxVersion` moved to `KleinVariant.storedMfluxVersion`. Klein 4B output is unchanged (native-versus-native identical).
 - **MLXImageCore**: `TextEncoderLayout` is now a struct with the presets `.qwen3_4B` and `.qwen3_8B`; `hiddenSize`, `intermediateSize`,
   `layerMatrices`, `quantizedMatrices` and `expectedTensors()` are instance members. Z-Image output is unchanged.
+- **FluxKlein**: `KleinConverter` converts the official FLUX.2 Klein 9B bf16 release into the q4 snapshot the loaders read, byte-identical
+  to `mflux-save` 0.20: `KleinSourceSnapshot.inspect(directory:verifyingWeightHashes:isCancelled:)` validates a folder and finds the variant
+  (`KleinConversionError` for anything else), `KleinConverter.convert(sourceDirectory:outputDirectory:progress:isCancelled:)` (and an
+  async form that stops when its task is cancelled) converts through a staging folder, and `KleinConverter.requiredBytes(for:)` gives the
+  output size. Quantization runs on the CPU (`KleinQ4Quantizer`, the arithmetic of MLX's Metal kernel); no GPU kernel is used. The official
+  file pins are `KleinOfficialRelease.klein9B`. Klein 4B is recognized but not converted (no pins).
 - **MLXImageParity**: `KleinVariantParity`, generation parity for either Klein variant against an MFLUX 0.20 export, with drift-relative
   limits, and its frozen cases (`klein_generation_cases.json`).
 
