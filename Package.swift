@@ -1,5 +1,5 @@
 // swift-tools-version: 6.0
-// MLXSwiftImage: native MLX image generation for Apple silicon (Z-Image Turbo and Base q4, FLUX.2 Klein 4B and 9B q4). Unofficial; not affiliated with ml-explore.
+// MLXSwiftImage: native MLX image generation for Apple silicon (Z-Image Turbo and Base q4, FLUX.2 Klein 4B and 9B q4, SeedVR2 3B upscaling). Unofficial; not affiliated with ml-explore.
 import PackageDescription
 
 // Pinned by commit, not by version string. A consumer that builds for release should also check the checked-out gitlinks of
@@ -14,6 +14,7 @@ let package = Package(
         .library(name: "MLXImageCore", targets: ["MLXImageCore"]),
         .library(name: "ZImage", targets: ["ZImage"]),
         .library(name: "FluxKlein", targets: ["FluxKlein"]),
+        .library(name: "SeedVR2", targets: ["SeedVR2"]),
         .library(name: "MLXImageParity", targets: ["MLXImageParity"]),
     ],
     dependencies: [
@@ -47,12 +48,24 @@ let package = Package(
                 .product(name: "MLXFast", package: "mlx-swift"),
             ]
         ),
-        // The parity and validation harness for both models: frozen cases and budgets, reference comparison, native exports, pins and
+        // SeedVR2 3B super-resolution: depends only on MLXImageCore. The fixed positive text embedding (ByteDance's pos_emb, Apache 2.0)
+        // ships as a resource, so no text encoder is needed.
+        .target(
+            name: "SeedVR2",
+            dependencies: [
+                "MLXImageCore",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXNN", package: "mlx-swift"),
+                .product(name: "MLXFast", package: "mlx-swift"),
+            ],
+            resources: [.copy("Resources/pos_emb.safetensors"), .copy("Resources/pos_emb.LICENSE-Apache-2.0.txt")]
+        ),
+        // The parity and validation harness for the models: frozen cases and budgets, reference comparison, native exports, pins and
         // manifests. Depends on the model modules; they never depend on it.
         .target(
             name: "MLXImageParity",
             dependencies: [
-                "MLXImageCore", "ZImage", "FluxKlein",
+                "MLXImageCore", "ZImage", "FluxKlein", "SeedVR2",
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXNN", package: "mlx-swift"),
                 .product(name: "MLXFast", package: "mlx-swift"),
@@ -61,7 +74,8 @@ let package = Package(
         .testTarget(name: "MLXImageCoreTests", dependencies: ["MLXImageCore"]),
         .testTarget(name: "FluxKleinTests", dependencies: ["FluxKlein", "MLXImageCore"]),
         .testTarget(name: "ZImageTests", dependencies: ["ZImage", "MLXImageCore"]),
-        .testTarget(name: "MLXImageParityTests", dependencies: ["MLXImageParity", "ZImage", "FluxKlein", "MLXImageCore"]),
+        .testTarget(name: "SeedVR2Tests", dependencies: ["SeedVR2", "MLXImageCore"]),
+        .testTarget(name: "MLXImageParityTests", dependencies: ["MLXImageParity", "ZImage", "FluxKlein", "SeedVR2", "MLXImageCore"]),
     ],
     swiftLanguageModes: [.v5]
 )

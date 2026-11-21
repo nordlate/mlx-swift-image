@@ -2,8 +2,17 @@
 
 The package uses semantic versioning. Before 1.0.0, a minor version may change the public API. Entries are grouped by product.
 
-## Unreleased
+## 0.3.0
 
+- **SeedVR2** (new product): SeedVR2 3B super-resolution, ported from MFLUX 0.20. `SeedVR2Upscaler(modelDirectory:)` loads the fp16
+  files of `numz/SeedVR2_comfyUI` (validated against `SeedVR2Pins` and `SeedVR2Layout` before any tensor is read) and quantizes the
+  linear layers to 4 bits at load, as MFLUX's `quantize=4` does; `upscale(_:)` takes a `SeedVR2Request` (8-bit RGB input, a
+  `SeedVR2Resolution` of `.shortestSide(_:)` or `.scale(_:)`, `softness` 0...1, a seed) and returns a `SeedVR2Output` with the pixels.
+  One transformer step, tiled VAE encode and decode, and MFLUX's colour correction. SeedVR2's fixed positive text embedding is bundled
+  (ByteDance's Apache 2.0 `pos_emb`, with its licence).
+- **MLXImageCore**: `ImageOutput.RGBImage` has a public initializer.
+- **MLXImageParity**: SeedVR2 parity against an MFLUX 0.20 export (`seedVR2Preprocess`, `seedVR2Noise`, `seedVR2Upscales`) and its
+  frozen cases (`seedvr2_cases.json`).
 - **FluxKlein**: FLUX.2 Klein 9B q4 (`KleinVariant.klein9B`, `KleinGenerator(modelDirectory:variant:)`): text to image and image to image
   through the same code path as 4B, from a snapshot written by `mflux-save` 0.20. The loaders take a `variant:` (default `.klein4B`) and
   refuse a snapshot of the other size before reading tensors. `KleinTransformerLayout` is now a struct with the presets `.klein4B` and
