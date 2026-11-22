@@ -22,6 +22,13 @@ public enum ImageOutput {
         public let height: Int
         /// Row-major interleaved RGB, `width * height * 3` bytes.
         public let bytes: [UInt8]
+
+        public init(width: Int, height: Int, bytes: [UInt8]) {
+            precondition(width >= 0 && height >= 0 && bytes.count == width * height * 3, "RGBImage needs width * height * 3 bytes")
+            self.width = width
+            self.height = height
+            self.bytes = bytes
+        }
     }
 
     public enum ImageError: Error, CustomStringConvertible {

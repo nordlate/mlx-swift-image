@@ -10,11 +10,20 @@ The model architectures were created by their authors, whose reference implement
 
 - FLUX.2 by Black Forest Labs, https://github.com/black-forest-labs/flux2 (Apache License 2.0)
 - Z-Image by Tongyi-MAI (Alibaba), https://github.com/Tongyi-MAI/Z-Image (Apache License 2.0)
+- SeedVR2 by ByteDance Seed, https://github.com/ByteDance-Seed/SeedVR and
+  https://huggingface.co/ByteDance-Seed/SeedVR2-3B (Apache License 2.0)
 
 This project builds on MLX Swift (https://github.com/ml-explore/mlx-swift, MIT License, Copyright (c) 2023
 ml-explore), resolved as a SwiftPM dependency and not included in this repository.
 
 No model weights are included. Each model's weights are covered by their own licence; see the model cards.
+
+One model-derived data file is included: Sources/SeedVR2/Resources/pos_emb.safetensors, SeedVR2's fixed positive
+text embedding (58 x 5120). It is pos_emb.pt from https://huggingface.co/ByteDance-Seed/SeedVR2-3B (Copyright
+ByteDance Seed, Apache License 2.0, https://www.apache.org/licenses/LICENSE-2.0), converted to float16 safetensors
+by MFLUX 0.20 (mflux/models/seedvr2/model/seedvr2_text_encoder/embeddings/pos_emb.safetensors), from which this
+copy is taken byte for byte (SHA-256 d2e06cadb10f1f149b5aa781185b250eb60f0e64327f12efd17886cecc9c2984). The Apache License 2.0 text is beside it
+(Sources/SeedVR2/Resources/pos_emb.LICENSE-Apache-2.0.txt) and is bundled with it.
 
 --------------------------------------------------------------------------------
 MFLUX, https://github.com/filipstrand/mflux

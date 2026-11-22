@@ -1,0 +1,34 @@
+{
+  "_comment": "Case lists for the SeedVR2 3B parity against MFLUX 0.20 (SeedVR2(quantize=4), the numz/SeedVR2_comfyUI fp16 files). Read by the Python exporter and the native checker. Inputs are written into the reference export by the exporter (whole files, or crops of a whole file); resolution is the shortest side in pixels or a scale factor ('2x'). Preprocess and noise cases are exact; pixel cases are complete upscales with every intermediate exported.",
+  "inputs": [
+    {"name": "portrait-512.png"},
+    {"name": "portrait.png"},
+    {"name": "forest.png"},
+    {"name": "portrait-crop-400x300.png", "base": "portrait.png", "crop": [312, 200, 400, 300]},
+    {"name": "forest-crop-333x517.png", "base": "forest.png", "crop": [101, 57, 333, 517]},
+    {"name": "portrait-crop-777x1001.png", "base": "portrait.png", "crop": [123, 11, 777, 1001]}
+  ],
+  "preprocess_cases": [
+    {"id": "pre-portrait512-1024-s0", "input": "portrait-512.png", "resolution": 1024, "softness": 0.0},
+    {"id": "pre-portrait512-1024-s50", "input": "portrait-512.png", "resolution": 1024, "softness": 0.5},
+    {"id": "pre-portrait512-1024-s100", "input": "portrait-512.png", "resolution": 1024, "softness": 1.0},
+    {"id": "pre-portrait-600-s0-downscale", "input": "portrait.png", "resolution": 600, "softness": 0.0},
+    {"id": "pre-portrait-1024-s0-same-size", "input": "portrait.png", "resolution": 1024, "softness": 0.0},
+    {"id": "pre-crop400x300-1080-s50-padded", "input": "portrait-crop-400x300.png", "resolution": 1080, "softness": 0.5},
+    {"id": "pre-crop333x517-2x-s25", "input": "forest-crop-333x517.png", "resolution": "2x", "softness": 0.25},
+    {"id": "pre-crop777x1001-1.5x-s0", "input": "portrait-crop-777x1001.png", "resolution": "1.5x", "softness": 0.0},
+    {"id": "pre-crop777x1001-1000-s75", "input": "portrait-crop-777x1001.png", "resolution": 1000, "softness": 0.75}
+  ],
+  "noise_cases": [
+    {"id": "noise-seed42-128x128", "seed": 42, "height": 128, "width": 128},
+    {"id": "noise-seed0-135x180", "seed": 0, "height": 135, "width": 180},
+    {"id": "noise-seed4294967303-256x256", "seed": 4294967303, "height": 256, "width": 256}
+  ],
+  "pixel_cases": [
+    {"id": "px-portrait512-1024-s0-seed42", "input": "portrait-512.png", "resolution": 1024, "softness": 0.0, "seed": 42},
+    {"id": "px-portrait512-1024-s50-seed42", "input": "portrait-512.png", "resolution": 1024, "softness": 0.5, "seed": 42},
+    {"id": "px-forest-2048-s0-seed42", "input": "forest.png", "resolution": 2048, "softness": 0.0, "seed": 42},
+    {"id": "px-forest-2048-s50-seed42", "input": "forest.png", "resolution": 2048, "softness": 0.5, "seed": 42},
+    {"id": "px-crop400x300-1080-s50-seed7", "input": "portrait-crop-400x300.png", "resolution": 1080, "softness": 0.5, "seed": 7}
+  ]
+}

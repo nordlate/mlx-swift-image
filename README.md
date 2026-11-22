@@ -7,9 +7,10 @@ Native Swift inference for image generation on Apple silicon, built on [MLX Swif
   bf16 download, byte-identical to `mflux-save`
 - **Z-Image Turbo** (q4): text to image
 - **Z-Image Base** (q4): text to image with classifier-free guidance and a negative prompt
+- **SeedVR2 3B** (quantized to 4 bits at load): image super-resolution (upscaling) in one diffusion step
 
 > **Unofficial.** This project is not affiliated with, endorsed by or maintained by Apple or the ml-explore/MLX project, nor by the authors of the
-> models it runs (Z-Image: Alibaba Tongyi-MAI; FLUX.2: Black Forest Labs).
+> models it runs (Z-Image: Alibaba Tongyi-MAI; FLUX.2: Black Forest Labs; SeedVR2: ByteDance Seed).
 
 The Swift code is a
 port of the reference Python/MFLUX pipelines, checked against frozen parity cases and golden pixels. Pixel-identical means identical to MFLUX on those cases with the MLX build used when they were exported; against other MLX builds, a small `rms_norm` difference between the Python wheel and the Swift package (see below) can move pixels by a few levels on average (mean 0.6–2.8 levels per channel on the Z-Image Turbo cases), with isolated pixels differing by up to about 150 levels.
@@ -22,11 +23,13 @@ port of the reference Python/MFLUX pipelines, checked against frozen parity case
 | FLUX.2 Klein 9B, q4 | `FluxKlein` (`KleinVariant.klein9B`) | text to image, image to image | 1...8 | [black-forest-labs/FLUX.2-klein-9B](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B) (FLUX Non-Commercial License; gated; snapshot made locally with `mflux-save` 0.20 `--quantize 4`) | prompt embeddings, ids, sigmas and seeded noise bit-identical to MFLUX 0.20; steps, starting-image latents and pixels within MFLUX's own eager-versus-compiled (or CPU-versus-GPU) drift (see below) |
 | Z-Image Turbo, q4 | `ZImage` | text to image | 4...12 | [Tongyi-MAI/Z-Image-Turbo](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo) | pixel-identical to MFLUX on the golden cases when they were exported; not reproduced with a later local re-export (see below) |
 | Z-Image Base, q4 | `ZImage` | text to image, guidance and negative prompt | 1...50 (28...50 recommended) | [Tongyi-MAI/Z-Image](https://huggingface.co/Tongyi-MAI/Z-Image) (Apache 2.0; snapshot [mflux-community/z-image-base-mflux-q4](https://huggingface.co/mflux-community/z-image-base-mflux-q4)) | sigmas bit-identical and guided steps within tolerance against MFLUX 0.20; pixels within MFLUX's own eager-versus-compiled drift (see below) |
+| SeedVR2 3B, 4-bit at load | `SeedVR2` | upscaling (image to image), `softness` 0...1 | 1 | [ByteDance-Seed/SeedVR2-3B](https://huggingface.co/ByteDance-Seed/SeedVR2-3B) (Apache 2.0; fp16 safetensors from [numz/SeedVR2_comfyUI](https://huggingface.co/numz/SeedVR2_comfyUI), Apache 2.0) | preprocessing, seeded noise and the scheduler step bit-identical to MFLUX 0.20; VAE encode and decode and the transformer step within the harness's limits; pixels within MFLUX's own eager-versus-compiled drift (see below) |
 
 Model weights are **not included** and are not downloaded by this package. Each model has its own licence and terms: check the model cards of the
-snapshots you use before running or redistributing them. The loaders read pre-quantized (q4) snapshots in the `mflux-save` layout. For FLUX.2
-Klein 9B, `KleinConverter` makes that snapshot from the official bf16 download (see [Converting FLUX.2 Klein 9B](#converting-flux2-klein-9b));
-the other models have no quantizer here. FLUX.2 Klein 9B is under the FLUX Non-Commercial License and is gated on Hugging Face: you need to
+snapshots you use before running or redistributing them. The Z-Image and Klein loaders read pre-quantized (q4) snapshots in the `mflux-save`
+layout. For FLUX.2 Klein 9B, `KleinConverter` makes that snapshot from the official bf16 download (see [Converting FLUX.2 Klein 9B](#converting-flux2-klein-9b));
+the other text-to-image models have no quantizer here. SeedVR2 reads the fp16 files and quantizes them to 4 bits when it loads them, as MFLUX
+does; its only bundled data is SeedVR2's fixed positive text embedding (ByteDance's Apache 2.0 `pos_emb`, with its licence, see `NOTICE`). FLUX.2 Klein 9B is under the FLUX Non-Commercial License and is gated on Hugging Face: you need to
 accept its terms, download it and convert it yourself; nothing in this repository contains or fetches its weights.
 
 > **No safeguards.** These pipelines run the models directly. They do not include the content filters, safety checkers or other safeguards
@@ -43,24 +46,25 @@ accept its terms, download it and convert it yourself; nothing in this repositor
 
 | Target | What |
 |---|---|
-| `MLXImageCore` | What both models share: the Qwen3 q4 text-encoder layout and ops, the Qwen tokenizer, safetensors header checks, PNG/JPEG output |
+| `MLXImageCore` | What the models share: the Qwen3 q4 text-encoder layout and ops, the Qwen tokenizer, safetensors header checks, PNG/JPEG output |
 | `ZImage` | Z-Image Turbo and Base: text encoder, transformer, schedulers, VAE, weight loaders, generator |
 | `FluxKlein` | FLUX.2 Klein 4B and 9B (`KleinVariant`): text encoder, transformer, VAE (with encoder for starting images), scheduler, weight loaders, generator, and the 9B converter (`KleinConverter`). One code path; the variant sets the transformer and text-encoder sizes (`KleinTransformerLayout.klein4B`/`.klein9B`, `TextEncoderLayout.qwen3_4B`/`.qwen3_8B`) and the pinned snapshot layout |
+| `SeedVR2` | SeedVR2 3B upscaling (`SeedVR2Upscaler`): weight validation and 4-bit quantization at load, the NaDiT transformer with windowed attention and 3D RoPE, the causal 3D VAE with MFLUX's tiling, Pillow-exact bicubic preprocessing, the seeded noise, MFLUX's colour correction, and the bundled positive text embedding |
 | `MLXImageParity` | Validation harness for the models: frozen cases, comparisons against reference exports, tolerances and budgets, parity metrics, pins and manifests. Not needed for inference |
 
-`ZImage` and `FluxKlein` depend on `MLXImageCore` and never on each other, and neither depends on `MLXImageParity`. The two models keep separate
+`ZImage`, `FluxKlein` and `SeedVR2` depend on `MLXImageCore` and never on each other, and none depends on `MLXImageParity`. The two models keep separate
 text encoders, schedulers, VAEs and transformers on purpose: they differ numerically (dtype flow, norm formulation and eps, rotation order,
 attention precision, compiled or eager steps) and the golden pixels pin each. Only code that is semantically identical lives in `MLXImageCore`.
 
-Tests live in `Tests/`, one test target per module (`MLXImageCoreTests`, `ZImageTests`, `FluxKleinTests`, `MLXImageParityTests`), with frozen
+Tests live in `Tests/`, one test target per module (`MLXImageCoreTests`, `ZImageTests`, `FluxKleinTests`, `SeedVR2Tests`, `MLXImageParityTests`), with frozen
 parity inputs in `Tests/Fixtures`.
 
 ## Using the library
 
-Add the package at a pinned version (or revision) and depend on the library products you need (`MLXImageCore`, `ZImage`, `FluxKlein`, and `MLXImageParity` only if you run the parity harness):
+Add the package at a pinned version (or revision) and depend on the library products you need (`MLXImageCore`, `ZImage`, `FluxKlein`, `SeedVR2`, and `MLXImageParity` only if you run the parity harness):
 
 ```swift
-.package(url: "https://github.com/nordlate/mlx-swift-image", exact: "0.2.0")
+.package(url: "https://github.com/nordlate/mlx-swift-image", exact: "0.3.0")
 ```
 
 ```swift
@@ -83,7 +87,21 @@ let klein = try KleinGenerator(modelDirectory: URL(fileURLWithPath: "/path/to/fl
 let klein9B = try KleinGenerator(modelDirectory: URL(fileURLWithPath: "/path/to/flux2-klein-9b-q4"), variant: .klein9B)
 ```
 
-See `Sources/ZImage/Pipeline.swift` and `Sources/FluxKlein/KleinGeneration.swift` for the full request and output types. MLX needs a Metal
+```swift
+import MLX
+import MLXImageCore
+import SeedVR2
+
+// SeedVR2 3B: the folder holds seedvr2_ema_3b_fp16.safetensors and ema_vae_fp16.safetensors (numz/SeedVR2_comfyUI @ 09ced710).
+Memory.cacheLimit = 0                                   // keeps the peak at the live arrays (see "SeedVR2 3B" below)
+let upscaler = try SeedVR2Upscaler(modelDirectory: URL(fileURLWithPath: "/path/to/seedvr2-comfyui"))
+let input = try ImageOutput.readPNG(at: URL(fileURLWithPath: "/path/to/input.png"))   // or ImageOutput.RGBImage(width:height:bytes:)
+let upscaled = try upscaler.upscale(SeedVR2Request(image: input, resolution: .scale(2), softness: 0.5, seed: 42))
+try upscaled.writePNG(to: URL(fileURLWithPath: "/path/to/output.png"))
+```
+
+See `Sources/ZImage/Pipeline.swift`, `Sources/FluxKlein/KleinGeneration.swift` and `Sources/SeedVR2/SeedVR2Upscaler.swift` for the full
+request and output types. MLX needs a Metal
 library at run time; the stock mlx-swift build provides it.
 
 ## Converting FLUX.2 Klein 9B
@@ -147,6 +165,9 @@ Tests that need model files or a reference export skip themselves with a message
 | `KLEIN9B_REFERENCE_DIR`, `KLEIN_REFERENCE_DIR` | Python/MFLUX 0.20 Klein 9B and 4B generation exports (`manifest.json`, per-case safetensors, input PNGs) for the cases in `Tests/Fixtures/reference/klein_generation_cases.json`; `KLEIN_PARITY_REPORT` optionally names a directory for the JSON reports |
 | `ZIMAGE_BASE_REFERENCE_DIR` | A Python/MFLUX 0.20 Z-Image Base reference export (`manifest.json`, per-case safetensors) for the guided step and pixel parity tests |
 | `ZIMAGE_REFERENCE_DIR` | A Python/MFLUX reference export (`manifest.json` and per-case safetensors) for the Z-Image tokenizer parity test |
+| `SEEDVR2_MODEL_DIR` | The folder with `seedvr2_ema_3b_fp16.safetensors` and `ema_vae_fp16.safetensors` from `numz/SeedVR2_comfyUI` (read only; the model test also checks their SHA-256) |
+| `SEEDVR2_REFERENCE_DIR` | A Python/MFLUX 0.20 SeedVR2 export (`manifest.json`, the input PNGs, per-case safetensors) for the cases in `Tests/Fixtures/reference/seedvr2_cases.json`; `SEEDVR2_PARITY_REPORT` optionally names a directory for the JSON report |
+| `SEEDVR2_MEASURE` | `<input png>:<shortest side>:<softness>`: the opt-in time and peak-memory measurement of one upscale (`SeedVR2MeasurementTests`, one job per process; `SEEDVR2_MEASURE_OUTPUT` optionally names the output PNG; `SEEDVR2_MEASURE_PHASES=1` also records the peak after each stage, from a separate untimed run) |
 
 Without any of them the model-dependent tests are skipped and the rest run.
 
@@ -185,6 +206,29 @@ denoising adds under 1 GiB at 1024²; the rest of the 1024² peak is the untiled
 process footprint reaches 31.6 GiB at 1024²; with `Memory.cacheLimit = 0` it peaks at 12.5 GiB (the weights are memory-mapped), at about
 10 % more time (7.6 s). A Mac with 16 GB is not enough: the GPU working-set limit there is about 10.7 GiB, below even the 512² peak. 32 GB
 is the practical minimum for 1024²; 24 GB may run smaller sizes but was not tested.
+
+### SeedVR2 3B
+
+SeedVR2 follows MFLUX 0.20's `SeedVR2(quantize=4)`: `softness` (0...1) first downscales the input by `1 + 7 * softness` with Pillow's
+bicubic filter and scales it back, the input is resized to the output size and padded with black to multiples of 16, the VAE encodes it
+in 512-pixel tiles (64-pixel overlap), one NaDiT step denoises seeded noise conditioned on that latent and on SeedVR2's fixed positive
+text embedding, the VAE decodes in 64-latent tiles (8-latent overlap), and MFLUX's wavelet and CIELAB colour correction is applied
+against the input. The transformer's linear layers are quantized to 4 bits (group size 64) when the fp16 file is loaded; no converter
+or pre-quantized snapshot is needed.
+
+Against an MFLUX 0.20 export of the same weights (nine preprocessing cases, three noise cases, five complete upscales: 512² to 1024²
+and 1024² to 2048², each at softness 0 and 0.5, and a padded 400x300 crop to 1080x1440), preprocessing, the output size and the seeded
+noise are bit-identical, and the scheduler step from MFLUX's prediction is exact. The transformer step from MFLUX's own noise and
+condition differs by 5.7e-4 to 8.5e-4 relative L2 (MFLUX's own compiled-versus-eager difference is about 8e-4), the tiled VAE encode and
+decode of MFLUX's tensors by at most 8e-4 (bit-identical at 2048²), and native pixels differ from MFLUX's by mean 0.05 to 0.12 levels
+(max 3 to 7), the same as MFLUX's own compiled-versus-eager runs; the test requires the native mean to stay within twice that drift.
+
+Measured on an M5 Max (64 GB), release build, one upscale per process at softness 0.5, `Memory.cacheLimit = 0` in both, peak
+`phys_footprint` (MFLUX 0.20 in brackets): loading takes 0.8 s and peaks at 2.6 GB, which is the peak during quantization at load
+(MFLUX loads lazily and quantizes inside its first upscale); 512² to 1024² takes 11.2 s at 11.1 GB (12.3 s, 11.46 GB); 1024² to 2048²
+44.2 s at 11.1 GB (48.5 s, 11.56 GB); 1024² to 4096² 178.7 s at 11.6 GB (194.9 s, 13.22 GB). The quantized weights take about 2.5 GB;
+most of the remaining peak is the transformer's activations (at 4096² the video MLP runs in token chunks to keep them down) and the
+VAE's tile activations, not the weights.
 
 ## Versioning
 
